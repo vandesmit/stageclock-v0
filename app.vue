@@ -1,4 +1,8 @@
 <script setup>
+const settings = reactive({
+  hideClock: false,
+})
+
 const clock = reactive({
   hours: '00',
   minutes: '00',
@@ -6,10 +10,12 @@ const clock = reactive({
 })
 
 // settings for current timer
-const cue = reactive({
-  // duration: 45296, // 12:34:56
-  duration: null,
+const cue = ref({
+  duration: 45296,
+  duration: 25,
   startedAt: 0,
+  description: 'THE FIRST CUE',
+  whenFinished: 2,
 })
 
 const timer = reactive({
@@ -18,6 +24,20 @@ const timer = reactive({
   seconds: '00',
   overTime: false,
 })
+
+const startNextCue = () => {
+  secondsRemaining.value = null
+
+  cue.value = {
+    duration: 30,
+    startedAt: new Date(),
+    description: 'THE SECOND CUE',
+    whenFinished: 0,
+  }
+}
+
+const secondsRemaining = ref(0)
+const pausedRemaining = ref(0)
 
 // get single digit without sign and return with leading zero
 const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
@@ -29,33 +49,65 @@ const setClock = (date) => {
 }
 
 const setTimer = (date) => {
-  const duration = parseInt(cue.duration || 0)
-  const startedAt = cue.startedAt
+  const {
+    duration = 0,
+    startedAt,
+    whenFinished
+  } = cue.value
 
-  // // calculate remaining time in seconds
-  // const secondsRemaining = !startedAt ? (duration || 0) : (startedAt + duration - parseInt(date.getTime() / 1000))
-
-  let secondsRemaining = duration || 0
+  secondsRemaining.value = pausedRemaining.value || duration || 0
   
   // calculate remaining time in seconds
   if (startedAt) {
-    secondsRemaining = parseInt(startedAt.getTime() / 1000) + duration - parseInt(date.getTime() / 1000)
+    secondsRemaining.value = parseInt(startedAt.getTime() / 1000) + parseInt(pausedRemaining.value || duration) - parseInt(date.getTime() / 1000)
+  }
+
+  // if over time
+  if (duration && startedAt && secondsRemaining.value <= 0) {
+    switch(whenFinished) {
+      case 0: // go over time
+        timer.overTime = true
+        break
+      case 1: // stop
+        secondsRemaining.value = 0
+        break
+      case 2: // auto continue
+        secondsRemaining.value = 0
+        startNextCue()
+        break
+      default: // go over time
+        timer.overTime = true
+        break
+    }
   }
 
   // calculate seperate times
-  const hours = parseInt(secondsRemaining / 3600)
-  const minutes = parseInt(secondsRemaining / 60) - hours * 60
-  const seconds = parseInt(secondsRemaining) - minutes * 60 - hours * 3600
+  const hours = parseInt(secondsRemaining.value / 3600)
+  const minutes = parseInt(secondsRemaining.value / 60) - hours * 60
+  const seconds = parseInt(secondsRemaining.value) - minutes * 60 - hours * 3600
 
   // set times
   timer.hours = checkSingleDigit(hours)
   timer.minutes = checkSingleDigit(minutes)
   timer.seconds = checkSingleDigit(seconds)
-  timer.overTime = duration && startedAt && secondsRemaining <= 0
 }
 
 const startCue = () => {
-  cue.startedAt = new Date()
+  cue.value.startedAt = new Date()
+}
+
+const pauseCue = () => {
+  pausedRemaining.value = secondsRemaining.value
+  cue.value.startedAt = 0
+}
+
+const resumeCue = () => {
+  cue.value.startedAt = new Date()
+}
+
+const cancelCue = () => {
+  cue.value.startedAt = 0
+  pausedRemaining.value = null
 }
 
 // update clock & timer
@@ -63,7 +115,7 @@ setInterval(() => {
   const date = new Date()
   setClock(date)
   setTimer(date)
-}, 100)
+}, 500)
 
 /**
  * NOTES
@@ -94,13 +146,59 @@ setInterval(() => {
         'text-red-500': timer.overTime
       }"
     >{{ timer.hours }}:{{ timer.minutes }}:{{ timer.seconds }}</div>
-    <div class="text-[100px] leading-none text-center">Worship</div>
+    <div class="text-[100px] leading-none text-center">{{ cue.description }}</div>
     <div class="flex justify-between">
-      <div class="grid grid-cols-2 gap-4 content-end text-[50px]">
-        <input v-model="cue.duration" type="number" class="text-black" placeholder="cue duration">
-        <button @click="startCue">Start cue</button>
+      <div class="grid gap-4 content-end text-2xl">
+        Current Cue info
+        <input 
+          v-model="cue.duration"
+          type="number"
+          class="text-black rounded-lg px-4"
+          placeholder="Duration"
+        >
+        <input 
+          v-model="cue.description"
+          type="text"
+          class="text-black rounded-lg px-4"
+          placeholder="Description"
+        >
+        <div class="flex flex-row justify-between text-xl">
+          <button
+            @click="cancelCue"
+            class="rounded-full border-2 h-24 w-24"
+            :class="[
+              pausedRemaining || cue.startedAt ? 'bg-gray-800 text-gray-100 border-gray-400' : 'bg-gray-500 text-gray-400 border-gray-400'
+            ]"
+          >
+            Cancel
+          </button>
+          <button
+            v-if="!pausedRemaining && !cue.startedAt"
+            @click="startCue"
+            class="rounded-full border-2 h-24 w-24 bg-green-800 text-green-100 border-green-400"
+          >
+            Start
+          </button>
+          <button
+            v-if="cue.startedAt"
+            @click="pauseCue"
+            class="rounded-full border-2 h-24 w-24 bg-orange-800 text-orange-100 border-orange-400"
+          >
+            Pause
+          </button>
+          <button
+            v-if="!cue.startedAt && pausedRemaining"
+            @click="resumeCue"
+            class="rounded-full border-2 h-24 w-24 bg-green-800 text-green-100 border-green-400"
+          >
+            Resume
+          </button>
+        </div>
       </div>
-      <div class="font-mono text-[200px] leading-none text-right text-gray-600">{{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}</div>
+      <div
+        v-if="!settings.hideClock"
+        class="font-mono text-[200px] leading-none text-right text-gray-600"
+      >{{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}</div>
     </div>
   </div>
 </template>
