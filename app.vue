@@ -11,11 +11,10 @@ const clock = reactive({
 
 // settings for current timer
 const cue = ref({
-  duration: 45296,
-  duration: 25,
+  duration: 85296,
   startedAt: 0,
   description: 'THE FIRST CUE',
-  whenFinished: 2,
+  whenFinished: 'continue',
 })
 
 const timer = reactive({
@@ -27,12 +26,13 @@ const timer = reactive({
 
 const startNextCue = () => {
   secondsRemaining.value = null
+  timer.overTime = false
 
   cue.value = {
     duration: 30,
     startedAt: new Date(),
     description: 'THE SECOND CUE',
-    whenFinished: 0,
+    whenFinished: 'negative',
   }
 }
 
@@ -65,17 +65,17 @@ const setTimer = (date) => {
   // if over time
   if (duration && startedAt && secondsRemaining.value <= 0) {
     switch(whenFinished) {
-      case 0: // go over time
+      case 'negative':
         timer.overTime = true
         break
-      case 1: // stop
+      case 'stop':
         secondsRemaining.value = 0
         break
-      case 2: // auto continue
+      case 'continue':
         secondsRemaining.value = 0
         startNextCue()
         break
-      default: // go over time
+      default:
         timer.overTime = true
         break
     }
@@ -141,63 +141,96 @@ setInterval(() => {
 <template>
   <div class="relative flex h-screen min-h-[1080px] w-screen min-w-[1920px] flex-col justify-between overflow-hidden bg-gray-900 text-white p-2">
     <div
-      class="font-mono text-[380px] leading-none text-center"
+      class="font-mono text-[20vw] leading-none text-center"
       :class="{
         'text-red-500': timer.overTime
       }"
     >{{ timer.hours }}:{{ timer.minutes }}:{{ timer.seconds }}</div>
-    <div class="text-[100px] leading-none text-center">{{ cue.description }}</div>
-    <div class="flex justify-between">
-      <div class="grid gap-4 content-end text-2xl">
-        Current Cue info
-        <input 
-          v-model="cue.duration"
-          type="number"
-          class="text-black rounded-lg px-4"
-          placeholder="Duration"
-        >
-        <input 
-          v-model="cue.description"
-          type="text"
-          class="text-black rounded-lg px-4"
-          placeholder="Description"
-        >
-        <div class="flex flex-row justify-between text-xl">
-          <button
-            @click="cancelCue"
-            class="rounded-full border-2 h-24 w-24"
-            :class="[
-              pausedRemaining || cue.startedAt ? 'bg-gray-800 text-gray-100 border-gray-400' : 'bg-gray-500 text-gray-400 border-gray-400'
-            ]"
+    <div class="text-[5vw] leading-none text-center">{{ cue.description }}</div>
+    <div class="flex justify-between content-end">
+      <div>
+        <div class="grid gap-4 content-end text-2xl">
+          Current Cue info
+          <input
+            v-model="cue.duration"
+            type="number"
+            class="text-black rounded-lg px-4"
+            placeholder="Duration"
           >
-            Cancel
-          </button>
-          <button
-            v-if="!pausedRemaining && !cue.startedAt"
-            @click="startCue"
-            class="rounded-full border-2 h-24 w-24 bg-green-800 text-green-100 border-green-400"
+          <input 
+            v-model="cue.description"
+            type="text"
+            class="text-black rounded-lg px-4"
+            placeholder="Description"
           >
-            Start
-          </button>
-          <button
-            v-if="cue.startedAt"
-            @click="pauseCue"
-            class="rounded-full border-2 h-24 w-24 bg-orange-800 text-orange-100 border-orange-400"
-          >
-            Pause
-          </button>
-          <button
-            v-if="!cue.startedAt && pausedRemaining"
-            @click="resumeCue"
-            class="rounded-full border-2 h-24 w-24 bg-green-800 text-green-100 border-green-400"
-          >
-            Resume
-          </button>
+          <div>When cue is finished:</div>
+          <div class="flex">
+            <input
+              v-model="cue.whenFinished"
+              type="radio"
+              id="one"
+              value="negative"
+              class="m-3"
+            />
+            <label for="one">Continue negative</label>
+          </div>
+          <div class="flex">
+            <input
+              v-model="cue.whenFinished"
+              type="radio"
+              id="two"
+              value="stop"
+              class="m-3"
+            />
+            <label for="two">Stop cue</label>
+          </div>
+          <div class="flex">
+            <input
+              v-model="cue.whenFinished"
+              type="radio"
+              id="three"
+              value="continue"
+              class="m-3"
+            />
+            <label for="three">Auto continue next cue</label>
+          </div>
+          <div class="flex flex-row justify-between text-xl">
+            <button
+              @click="cancelCue"
+              class="rounded-full border-2 h-24 w-24"
+              :class="[
+                pausedRemaining || cue.startedAt ? 'bg-gray-800 text-gray-100 border-gray-400' : 'bg-gray-500 text-gray-400 border-gray-400'
+              ]"
+            >
+              Cancel
+            </button>
+            <button
+              v-if="!pausedRemaining && !cue.startedAt"
+              @click="startCue"
+              class="rounded-full border-2 h-24 w-24 bg-green-800 text-green-100 border-green-400"
+            >
+              Start
+            </button>
+            <button
+              v-if="cue.startedAt"
+              @click="pauseCue"
+              class="rounded-full border-2 h-24 w-24 bg-orange-800 text-orange-100 border-orange-400"
+            >
+              Pause
+            </button>
+            <button
+              v-if="!cue.startedAt && pausedRemaining"
+              @click="resumeCue"
+              class="rounded-full border-2 h-24 w-24 bg-green-800 text-green-100 border-green-400"
+            >
+              Resume
+            </button>
+          </div>
         </div>
       </div>
       <div
         v-if="!settings.hideClock"
-        class="font-mono text-[200px] leading-none text-right text-gray-600"
+        class="font-mono text-[10vw] leading-none text-right text-gray-600 flex content-end justify-end"
       >{{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}</div>
     </div>
   </div>
