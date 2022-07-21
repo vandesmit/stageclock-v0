@@ -1,4 +1,37 @@
 <script setup>
+const listening = ref(0)
+
+const now = () => new Date().getTime() / 1000
+
+if (!listening.value) {
+  const events = new EventSource('http://localhost:3005/api/messages');
+  console.log('listening')
+
+  events.onmessage = (event) => {
+    const message = JSON.parse(event.data)
+    console.log({ message })
+    if ('cue' in message) {
+        cue.value = {
+          ...cue.value,
+          ...message.cue
+        }
+    }
+    if ('pausedRemaining' in message) {
+      pausedRemaining.value = message.pausedRemaining
+    }
+  }
+
+  listening.value = true
+}
+
+const sendAction = async (data) => {
+    await $fetch( 'http://localhost:3005/api/message', {
+      method: 'POST',
+      body: data
+  } );
+}
+
+
 const settings = reactive({
   hideClock: false,
 })
@@ -30,7 +63,7 @@ const startNextCue = () => {
 
   cue.value = {
     duration: 30,
-    startedAt: new Date(),
+    startedAt: now(),
     description: 'THE SECOND CUE',
     whenFinished: 'negative',
   }
@@ -59,7 +92,7 @@ const setTimer = (date) => {
   
   // calculate remaining time in seconds
   if (startedAt) {
-    secondsRemaining.value = parseInt(startedAt.getTime() / 1000) + parseInt(pausedRemaining.value || duration) - parseInt(date.getTime() / 1000)
+    secondsRemaining.value = parseInt(startedAt) + parseInt(pausedRemaining.value || duration) - parseInt(date.getTime() / 1000)
   }
 
   // if over time
@@ -79,6 +112,8 @@ const setTimer = (date) => {
         timer.overTime = true
         break
     }
+  } else {
+    timer.overTime = false
   }
 
   // calculate seperate times
@@ -93,21 +128,31 @@ const setTimer = (date) => {
 }
 
 const startCue = () => {
-  cue.value.startedAt = new Date()
+  sendAction({ cue: { startedAt: now() } })
+  // cue.value.startedAt = now()
 }
 
 const pauseCue = () => {
-  pausedRemaining.value = secondsRemaining.value
-  cue.value.startedAt = 0
+  sendAction({
+    cue: { startedAt: 0 },
+    pausedRemaining: secondsRemaining.value
+  })
+  // cue.value.startedAt = 0
+  // pausedRemaining.value = secondsRemaining.value
 }
 
 const resumeCue = () => {
-  cue.value.startedAt = new Date()
+  sendAction({ cue: { startedAt: now() } })
+  // cue.value.startedAt = now()
 }
 
 const cancelCue = () => {
-  cue.value.startedAt = 0
-  pausedRemaining.value = null
+  sendAction({
+    cue: { startedAt: 0 },
+    pausedRemaining: 0
+  })
+  // cue.value.startedAt = 0
+  // pausedRemaining.value = null
 }
 
 // update clock & timer
@@ -115,7 +160,7 @@ setInterval(() => {
   const date = new Date()
   setClock(date)
   setTimer(date)
-}, 500)
+}, 100)
 
 /**
  * NOTES
