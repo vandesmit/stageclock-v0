@@ -3,9 +3,8 @@ const listening = ref(0)
 
 const now = () => new Date().getTime() / 1000
 
-if (!listening.value) {
-  const events = new EventSource('http://localhost:3005/api/messages');
-  console.log('listening')
+if (!listening.value && typeof EventSource !== 'undefined') {
+  const events = new EventSource('/server-api/messages')
 
   events.onmessage = (event) => {
     const message = JSON.parse(event.data)
@@ -25,12 +24,11 @@ if (!listening.value) {
 }
 
 const sendAction = async (data) => {
-    await $fetch( 'http://localhost:3005/api/message', {
+    await $fetch( '/server-api/message', {
       method: 'POST',
       body: data
   } );
 }
-
 
 const settings = reactive({
   hideClock: false,

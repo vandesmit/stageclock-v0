@@ -6,5 +6,8 @@ export default defineNuxtConfig({
     shim: false
   },
   modules: ['@nuxtjs/tailwindcss'],
-  ssr: false,
+  serverMiddleware: [
+    // Will register file from project server-middleware directory to handle /server-api/* requests
+    { path: "/server-api", handler: "~/server-middleware/api.ts" },
+  ],
 })
