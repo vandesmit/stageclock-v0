@@ -38,7 +38,7 @@ const cue = ref({
   duration: 85296,
   startedAt: 0,
   description: 'THE FIRST CUE',
-  whenFinished: 'continue',
+  type: 'continue',
 })
 
 const timer = reactive({
@@ -56,7 +56,7 @@ const startNextCue = () => {
     duration: 30,
     startedAt: now(),
     description: 'THE SECOND CUE',
-    whenFinished: 'negative',
+    type: 'negative',
   }
 }
 
@@ -76,7 +76,7 @@ const setTimer = (date) => {
   const {
     duration = 0,
     startedAt,
-    whenFinished
+    type
   } = cue.value
 
   secondsRemaining.value = pausedRemaining.value || duration || 0
@@ -88,7 +88,7 @@ const setTimer = (date) => {
 
   // if over time
   if (duration && startedAt && secondsRemaining.value <= 0) {
-    switch(whenFinished) {
+    switch(type) {
       case 'negative':
         timer.overTime = true
         break
