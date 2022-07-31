@@ -15,9 +15,6 @@ if (!listening.value && typeof EventSource !== 'undefined') {
           ...message.cue
         }
     }
-    if ('pausedRemaining' in message) {
-      pausedRemaining.value = message.pausedRemaining
-    }
   }
 
   listening.value = true

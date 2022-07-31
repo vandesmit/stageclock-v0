@@ -13,7 +13,7 @@ app.get('/status', (req, res) => res.json({
 app.get('/logs', (req, res) => res.json(log))
 
 let clients = []
-const welcomeMessage = { message: 'Connected' }
+const welcomeMessage = { log: 'Welcome! Api is running and connected' }
 let log = [
   welcomeMessage
 ]
@@ -45,19 +45,20 @@ function eventsHandler(req, res, next) {
   });
 }
 
-app.get('/messages', eventsHandler);
+app.get('/sync', eventsHandler);
 
 function sendEventsToAll(newInfo) {
   clients.forEach(client => client.response.write(`data: ${JSON.stringify(newInfo)}\n\n`))
 }
 
-async function addInfo(req, res, next) {
+async function handleCueList(req, res, next) {
   const newInfo = req.body
   log.push(newInfo)
   res.json(newInfo)
   return sendEventsToAll(newInfo)
+  // TODO: save to local json
 }
 
-app.post('/message', addInfo)
+app.post('/cue-list', handleCueList)
 
 export default app

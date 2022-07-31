@@ -1,31 +1,76 @@
 <script setup>
+const props = defineProps({
+  cueList: {
+    type: Array,
+    default: () => ([])
+  }
+})
+
+const emit = defineEmits(['secondsRemaining', 'currentCueId'])
+
 const listening = ref(0)
+const cueList = ref(props.cueList)
+
+// const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.durationRemaining) || cueList.value[0] || {} )
+const cue = computed(() => cueList.value.find(c => c.startedAt))
+watch(cue, value => emit('currentCueId', value && value.id))
 
 const now = () => new Date().getTime() / 1000
 
 if (!listening.value && typeof EventSource !== 'undefined') {
-  const events = new EventSource('/server-api/messages')
+  const events = new EventSource('/server-api/sync')
 
-  events.onmessage = (event) => {
-    const message = JSON.parse(event.data)
-    console.log({ message })
-    if ('cue' in message) {
-        cue.value = {
-          ...cue.value,
-          ...message.cue
-        }
+  // watch for events
+  events.onmessage = ({ data }) => {
+    const { cueList, log } = JSON.parse(data)
+
+    // set new cue list
+    if (cueList) {
+      cueList.value = cueList
+      console.log('EVENT: new cue list', cueList)
     }
-    if ('pausedRemaining' in message) {
-      pausedRemaining.value = message.pausedRemaining
+
+    if (log) {
+      console.log(log)
     }
   }
 
   listening.value = true
 }
 
+const sendAction = async (data) => {
+    await $fetch( '/server-api/message', {
+      method: 'POST',
+      body: data
+  } );
+}
+
 const settings = reactive({
   hideClock: false,
 })
+
+
+const startNextCue = () => {
+  secondsRemaining.value = 0 
+  timer.overTime = false
+  const currentKey = cueList.value.findIndex(item => item.id === cue.value.id)
+  const nextKey = currentKey + 1
+
+  const nextCue = cueList.value[nextKey]
+
+  if (nextCue) {
+    cueList.value[nextKey].startedAt = now()
+    cueList.value[currentKey].startedAt = null
+  } else {
+    cueList.value[currentKey].type = 'stop'
+  }
+
+  sendAction({ cueList: cueList.value })
+}
+
+// get single digit without sign and return with leading zero
+const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
+
 
 const clock = reactive({
   hours: '00',
@@ -33,14 +78,13 @@ const clock = reactive({
   seconds: '00',
 })
 
-// settings for current timer
-const cue = ref({
-  duration: 85296,
-  startedAt: 0,
-  description: 'THE FIRST CUE',
-  type: 'continue',
-})
+const setClock = (date) => {
+  clock.hours = checkSingleDigit(date.getHours())
+  clock.minutes = checkSingleDigit(date.getMinutes())
+  clock.seconds = checkSingleDigit(date.getSeconds())
+}
 
+const secondsRemaining = ref(0)
 const timer = reactive({
   hours: '00',
   minutes: '00',
@@ -48,43 +92,26 @@ const timer = reactive({
   overTime: false,
 })
 
-const startNextCue = () => {
-  secondsRemaining.value = null
-  timer.overTime = false
-
-  cue.value = {
-    duration: 30,
-    startedAt: now(),
-    description: 'THE SECOND CUE',
-    type: 'negative',
-  }
-}
-
-const secondsRemaining = ref(0)
-const pausedRemaining = ref(0)
-
-// get single digit without sign and return with leading zero
-const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
-
-const setClock = (date) => {
-  clock.hours = checkSingleDigit(date.getHours())
-  clock.minutes = checkSingleDigit(date.getMinutes())
-  clock.seconds = checkSingleDigit(date.getSeconds())
-}
-
 const setTimer = (date) => {
   const {
-    duration = 0,
+    duration,
+    durationRemaining,
     startedAt,
-    type
-  } = cue.value
+    type,
+  } = cue.value || {}
 
-  secondsRemaining.value = pausedRemaining.value || duration || 0
+  let calculatedRemaining = durationRemaining || duration || 0
   
   // calculate remaining time in seconds
   if (startedAt) {
-    secondsRemaining.value = parseInt(startedAt) + parseInt(pausedRemaining.value || duration) - parseInt(date.getTime() / 1000)
+    calculatedRemaining = parseInt(startedAt) + parseInt(calculatedRemaining) - parseInt(date.getTime() / 1000)
   }
+
+  // check if remaining time changed
+  if (calculatedRemaining === secondsRemaining.value) {
+    return
+  }
+  secondsRemaining.value = calculatedRemaining
 
   // if over time
   if (duration && startedAt && secondsRemaining.value <= 0) {
@@ -106,6 +133,7 @@ const setTimer = (date) => {
   } else {
     timer.overTime = false
   }
+  emit('secondsRemaining', secondsRemaining.value)
 
   // calculate seperate times
   const hours = parseInt(secondsRemaining.value / 3600)
@@ -118,46 +146,28 @@ const setTimer = (date) => {
   timer.seconds = checkSingleDigit(seconds)
 }
 
-
 // update clock & timer
 setInterval(() => {
   const date = new Date()
   setClock(date)
   setTimer(date)
 }, 100)
-
-/**
- * NOTES
- * 
- * Timers
- * - name
- * - duration
- * - start time
- * - when finished
- *    0 - go negative
- *    1 - stop
- *    2 - auto continue
- * 
- * Interface
- * - Show clock
- * 
- * Features
- * * re-order
- * * default list
- */
-
 </script>
 <template>
 <div class="flex h-[100%] w-[100%] flex-col justify-between bg-gray-900 text-white">
   <div
+    v-if="timer"
     class="font-mono text-[20vw] leading-none text-center"
     :class="{
-      'text-red-500': timer.overTime
+      'text-red-500': timer.overTime,
+      'text-gray-800': !cue,
     }"
   >{{ timer.hours }}:{{ timer.minutes }}:{{ timer.seconds }}</div>
-  <div class="text-[5vw] leading-none text-center mt-2">{{ cue.description }}</div>
+  <div class="text-[5vw] leading-none text-center mt-2">
+    {{ cue && cue.description && cue.description || '-' }}
+  </div>
   <div
-    v-if="!settings.hideClock"
+    v-if="clock && !settings.hideClock"
     class="font-mono text-[10vw] leading-none text-right text-gray-600 mt-2"
   >{{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}</div>
 </div>
