@@ -1,5 +1,6 @@
 <script setup>
 import { nanoid } from "nanoid"
+
 const listening = ref(0)
 const isEditable = ref(false)
 const cueDefaults = {
@@ -15,20 +16,20 @@ const cueTypeOptions = {
 
 const now = () => new Date().getTime() / 1000
 
+// Start listening for new events
 if (!listening.value && typeof EventSource !== 'undefined') {
   const events = new EventSource('/server-api/sync')
 
-  // watch for events
+  // set callback for events
   events.onmessage = ({ data }) => {
     const messageBag = JSON.parse(data)
-
-    console.log('STREAM: ', messageBag)
 
     // set new cue list
     if (messageBag.cueList) {
       cueList.value = messageBag.cueList
     }
 
+    // log message if requested
     if (messageBag.log) {
       console.log(messageBag.log)
     }
@@ -37,7 +38,8 @@ if (!listening.value && typeof EventSource !== 'undefined') {
   listening.value = true
 }
 
-const syncCueList = async () => {
+// sync cue list with server-side
+const sync = async () => {
   await $fetch( '/server-api/cue-list', {
     method: 'POST',
     body: {
@@ -48,42 +50,45 @@ const syncCueList = async () => {
 
 const cueList = ref([])
 
+// Add a cue to the cue list
 const addCue = (cue) => {
   cueList.value.push({
     id: nanoid(48),
     ...cueDefaults,
     ...cue,
   })
-  syncCueList()
+  sync()
 }
 
-const updateCue = async (cue) => {
-  const cueKey = cue.id && cueList.value.findIndex(cueListItem => {
-    return cueListItem.id === cue.id
-  })
+// update a cue from the cue list
+const updateCue = (cue) => {
+  const cueKey = cue.id && cueList.value.findIndex(cueListItem => cueListItem.id === cue.id)
+
   if (typeof cueKey === 'undefined' || cueKey < 0) {
     console.warn('didn\'t find cue by key to update, so adding new cue')
     addCue(cue)
   }
-  cueList.value[cueKey] = await {
+  cueList.value[cueKey] = {
     ...cueList.value[cueKey],
     ...cue
   }
 
-  syncCueList()
+  sync()
 }
 
+// delete a cue from the cue list
 const deleteCue = (id) => {
   if (confirm('Are you sure you want to delete a cue?')) {
     cueList.value = cueList.value.filter(cue => cue.id !== id)
   }
 }
 
+// start timer with new cue
 const startCue = (id) => {
   // get start time
   const startedAt = now()
 
-  // Pause all cues
+  // Pause all cues (fallback mechanism)
   cueList.value.forEach((value, key) => {
     if (value.startedAt) {
       cueList.value[key].startedAt = null
@@ -97,31 +102,29 @@ const startCue = (id) => {
     startedAt,
   })
 }
-const pauseCue = (id) => {
-  updateCue({
-    id,
-    startedAt: 0,
-    durationRemaining: secondsRemaining.value
-  })
-}
 
-const stopCue = (id) => {
-  updateCue({
-    id,
-    startedAt: 0,
-    durationRemaining: null,
-  })
-}
+// pause timer for current cue
+const pauseCue = id => updateCue({
+  id,
+  startedAt: 0,
+  durationRemaining: secondsRemaining.value
+})
 
+// stop timer for current cue
+const stopCue = id => updateCue({
+  id,
+  startedAt: 0,
+  durationRemaining: null,
+})
+
+// timer value in seconds (can be negative)
 const secondsRemaining = ref(0)
+
+// current timer cue id
 const currentCueId = ref(null)
 
 const setSecondsRemaining = seconds => secondsRemaining.value = seconds
-
-const setCurrentCueId = (id) => {
-  currentCueId.value = id
-}
-
+const setCurrentCueId = id => currentCueId.value = id
 const toggleIsEditable = () => isEditable.value = !isEditable.value
 
 /**
@@ -225,7 +228,7 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
       </div>
       <button
         v-if="isEditable"
-        @click="() => {toggleIsEditable(); syncCueList()}"
+        @click="() => {toggleIsEditable(); sync()}"
         class="btn w-[100%] rounded-t"
       >
         SAVE & STOP
