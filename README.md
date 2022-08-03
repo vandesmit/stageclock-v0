@@ -15,7 +15,33 @@ yarn install
 Start the development server on http://localhost:3000
 
 ```bash
-node server
-
 yarn dev
 ```
+
+## Build production Server
+
+Build production folder
+
+```bash
+yarn build
+```
+
+Run production folder
+
+```bash
+yarn Start
+```
+
+Listen on http://localhost:3002 OR http://localhost:3000
+
+## Pages
+
+Front-end
+
+* / Show the timer and Clock
+* /admin Edit and trigger cue list
+
+Server api
+
+* /server-api/logs Show all logs
+* /server-api/clients Show number of connected clients
