@@ -13,6 +13,7 @@ const cueList = ref(props.cueList)
 
 // const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.durationRemaining) || cueList.value[0] || {} )
 const cue = computed(() => cueList.value.find(c => c.startedAt))
+
 watch(cue, value => emit('currentCueId', value && value.id))
 
 const now = () => new Date().getTime() / 1000
@@ -22,33 +23,50 @@ if (!listening.value && typeof EventSource !== 'undefined') {
 
   // watch for events
   events.onmessage = ({ data }) => {
-    const { cueList, log } = JSON.parse(data)
+    const messageBag = JSON.parse(data)
+
+    console.log('STREAM: ', messageBag)
 
     // set new cue list
-    if (cueList) {
-      cueList.value = cueList
-      console.log('EVENT: new cue list', cueList)
+    if (messageBag.cueList) {
+      cueList.value = messageBag.cueList
     }
 
-    if (log) {
-      console.log(log)
+    if (messageBag.log) {
+      console.log(messageBag.log)
     }
   }
 
   listening.value = true
 }
 
-const sendAction = async (data) => {
-    await $fetch( '/server-api/message', {
-      method: 'POST',
-      body: data
-  } );
+const syncCueList = async (data) => {
+  await $fetch( '/server-api/cue-list', {
+    method: 'POST',
+    body: {
+      cueList: cueList.value
+    }
+  })
 }
 
 const settings = reactive({
   hideClock: false,
 })
 
+const updateCue = async (newCueValues) => {
+  const cueKey = newCueValues.id && cueList.value.findIndex(cueListItem => {
+    return cueListItem.id === newCueValues.id
+  })
+  if (typeof cueKey === 'undefined' || cueKey < 0) {
+    return
+  }
+  cueList.value[cueKey] = await {
+    ...cueList.value[cueKey],
+    ...newCueValues
+  }
+
+  syncCueList()
+}
 
 const startNextCue = () => {
   secondsRemaining.value = 0 
@@ -65,12 +83,11 @@ const startNextCue = () => {
     cueList.value[currentKey].type = 'stop'
   }
 
-  sendAction({ cueList: cueList.value })
+  syncCueList()
 }
 
 // get single digit without sign and return with leading zero
 const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
-
 
 const clock = reactive({
   hours: '00',
@@ -94,6 +111,7 @@ const timer = reactive({
 
 const setTimer = (date) => {
   const {
+    id,
     duration,
     durationRemaining,
     startedAt,
@@ -120,10 +138,18 @@ const setTimer = (date) => {
         timer.overTime = true
         break
       case 'stop':
-        secondsRemaining.value = 0
+        updateCue({
+          id,
+          startedAt: 0,
+          durationRemaining: 0,
+        })
         break
       case 'continue':
-        secondsRemaining.value = 0
+        updateCue({
+          id,
+          startedAt: 0,
+          durationRemaining: 0,
+        })
         startNextCue()
         break
       default:

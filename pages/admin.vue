@@ -1,7 +1,7 @@
 <script setup>
 import { nanoid } from "nanoid"
 const listening = ref(0)
-const isEditable = ref(false)
+const isEditable = ref(true)
 
 const now = () => new Date().getTime() / 1000
 
@@ -10,16 +10,17 @@ if (!listening.value && typeof EventSource !== 'undefined') {
 
   // watch for events
   events.onmessage = ({ data }) => {
-    const { cueList, log } = JSON.parse(data)
+    const messageBag = JSON.parse(data)
+
+    console.log('STREAM: ', messageBag)
 
     // set new cue list
-    if (cueList) {
-      cueList.value = cueList
-      console.log('EVENT: new cue list', cueList)
+    if (messageBag.cueList) {
+      cueList.value = messageBag.cueList
     }
 
-    if (log) {
-      console.log(log)
+    if (messageBag.log) {
+      console.log(messageBag.log)
     }
   }
 
@@ -35,27 +36,7 @@ const syncCueList = async (data) => {
   })
 }
 
-const cueList = ref([
-  {
-    id: nanoid(48),
-    description: 'Cue item 1',
-    duration: 5,
-    type: 'continue',
-  },
-  { 
-    id: nanoid(48),
-    description: 'Cue item 2',
-    duration: 10,
-    type: 'negative',
-    // startedAt: 1659279715.411,
-  },
-  { 
-    id: nanoid(48),
-    description: 'Cue item 3',
-    duration: 5,
-    type: 'stop',
-  }
-])
+const cueList = ref([])
 
 const addCue = (cue) => {
   cueList.value.push({
@@ -84,14 +65,17 @@ const updateCue = async (cue) => {
   syncCueList()
 }
 
-const stopAllCues = () => cueList.value.forEach((value, key) => cueList.value[key].startedAt = null)
-
 const startCue = (id) => {
   // get start time
   const startedAt = now()
 
-  // stop all other start times
-  stopAllCues()
+  // Pause all cues
+  cueList.value.forEach((value, key) => {
+    if (value.startedAt) {
+      cueList.value[key].startedAt = null
+      cueList.value[key].durationRemaining = secondsRemaining.value
+    }
+  })
 
   // start cue
   updateCue({
@@ -106,10 +90,12 @@ const pauseCue = (id) => {
     durationRemaining: secondsRemaining.value
   })
 }
-const resumeCue = (id) => {
+
+const stopCue = (id) => {
   updateCue({
     id,
-    startedAt: now(),
+    startedAt: 0,
+    durationRemaining: 0,
   })
 }
 
@@ -138,87 +124,62 @@ const toggleEditShow = () => isEditable.value = !isEditable.value
 <template>
   <div>
     <div class="flex min-h-screen w-screen flex-col bg-gray-900 text-white p-2 pb-12">
+      <!-- :cue-list="cueList" -->
       <Clock
         :cue-list="cueList"
         @seconds-remaining="setSecondsRemaining"
         @current-cue-id="setCurrentCueId"
       />
-      <template v-if="isEditable">
-        <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
-          <div v-for="cue in cueList" :key="cue.id" class="cue flex">
-            <div class="flex grow flex-col">
-              <div class="cue-name">{{ cue.description }}</div>
-              <div class="cue-type">{{ cue.type }}</div>
-            </div>
-            <div class="cue-duration">{{ cue.duration }}</div>
-            <div>
-              <button
-                v-if="!cue.startedAt && !cue.durationRemaining"
-                @click="startCue(cue.id)"
-                class="btn btn-green btn-action"
-              >
-                Start
-              </button>
-              <button
-                v-if="cue.startedAt"
-                @click="pauseCue(cue.id)"
-                class="btn btn-orange btn-action"
-              >
-                Pause
-              </button>
-              <button
-                v-if="!cue.startedAt && cue.durationRemaining"
-                @click="resumeCue(cue.id)"
-                class="btn btn-green btn-action"
-              >
-                Resume
-              </button>
+
+      <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
+        <div v-for="cue in cueList" :key="cue.id" class="flex py-3 px-1">
+          <div class="flex grow flex-col">
+            <div class="cue-name">{{ cue.description }}</div>
+            <div class="flex justify-items-stretch">
+              <div class="basis-1/3">{{ cue.type }}</div>
+              <div class="basis-1/3">{{ cue.duration }}</div>
+              <div class="basis-1/3">{{ cue.durationRemaining }}</div>
             </div>
           </div>
+          <div>
+            <button
+              v-if="!cue.startedAt && !cue.durationRemaining"
+              @click="startCue(cue.id)"
+              class="btn btn-green btn-action"
+            >
+              {{ cue.durationRemaining === 0 ? 'Restart' : 'Start' }}
+            </button>
+            <button
+              v-else-if="!cue.startedAt && cue.durationRemaining > 0"
+              @click="startCue(cue.id)"
+              class="btn btn-green btn-action"
+            >
+              Resume
+            </button>
+            <button
+              v-else-if="cue.startedAt && secondsRemaining >= 0"
+              @click="pauseCue(cue.id)"
+              class="btn btn-orange btn-action"
+            >
+              Pause
+            </button>
+            <button
+              v-else
+              @click="stopCue(cue.id)"
+              class="btn btn-orange btn-action"
+            >
+              Stop
+            </button>
+          </div>
         </div>
+      </div>
+      <template v-if="isEditable">
         <button
           @click="addCue"
           class="btn"
         >
           ADD CUE
         </button>
-      </template>
-      <template v-else>
-        <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
-          <div v-for="cue in cueList" :key="cue.id" class="flex py-3 px-1">
-            <div class="flex grow flex-col">
-              <div class="cue-name">{{ cue.description }}</div>
-              <div class="flex justify-items-stretch">
-                <div class="basis-1/3">{{ cue.type }}</div>
-                <div class="basis-1/3">{{ cue.duration }}</div>
-                <div class="basis-1/3">{{ cue.durationRemaining }}</div>
-              </div>
-            </div>
-            <div>
-              <button
-                v-if="!cue.startedAt && !cue.durationRemaining"
-                @click="startCue(cue.id)"
-                class="btn btn-green btn-action"
-              >
-                Start
-              </button>
-              <button
-                v-if="cue.startedAt"
-                @click="pauseCue(cue.id)"
-                class="btn btn-orange btn-action"
-              >
-                Pause
-              </button>
-              <button
-                v-if="!cue.startedAt && cue.durationRemaining"
-                @click="resumeCue(cue.id)"
-                class="btn btn-green btn-action"
-              >
-                Resume
-              </button>
-            </div>
-          </div>
-        </div>
       </template>
     </div>
     <button
@@ -243,10 +204,18 @@ const toggleEditShow = () => isEditable.value = !isEditable.value
 
   &-green {
     @apply bg-green-800 text-green-100;
+
+    &:hover {
+      @apply bg-green-700;
+    }
   }
 
   &-orange {
     @apply bg-orange-800 text-orange-100;
+
+    &:hover {
+      @apply bg-orange-700;
+    }
   }
 }
 </style>

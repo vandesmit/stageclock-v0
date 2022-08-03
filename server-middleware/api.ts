@@ -1,64 +1,75 @@
 import express from 'express'
 import cors from 'cors'
+import fs from 'fs'
 
+const jsonPath = './database.json'
+const welcomeMessage = { log: 'Welcome! Api is running and connected' }
+const log = [ welcomeMessage ]
 const app = express()
+
+let clients = []
 
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
-app.get('/status', (req, res) => res.json({
-  clients: clients.length
-}))
+app.get('/status', (req, res) => res.json({ 'clients connected': clients.length }))
 app.get('/logs', (req, res) => res.json(log))
 
-let clients = []
-const welcomeMessage = { log: 'Welcome! Api is running and connected' }
-let log = [
-  welcomeMessage
-]
-
-function eventsHandler(req, res, next) {
+app.get('/sync', (req, res) => {
+  const clientId = Date.now()
   const headers = {
     'Content-Type': 'text/event-stream',
     'Connection': 'keep-alive',
     'Cache-Control': 'no-cache'
-  };
-  res.writeHead(200, headers);
+  }
 
-  const data = `data: ${JSON.stringify(welcomeMessage)}\n\n`;
+  res.writeHead(200, headers)
+  res.write(`data: ${JSON.stringify(welcomeMessage)}\n\n`)
 
-  res.write(data);
+  fs.access(jsonPath, fs.constants.F_OK, (err) => {
+    if (err) {
+      // Don't use json file if not present or other errors
+      return
+    }
 
-  const clientId = Date.now();
+    fs.readFile(jsonPath, 'utf8', (err, dataString) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      res.write(`data: ${dataString}\n\n`)
+    })
+  })
 
-  const newClient = {
+  clients.push({
     id: clientId,
     response: res
-  };
-
-  clients.push(newClient);
+  })
 
   req.on('close', () => {
     console.log(`${clientId} Connection closed`);
     clients = clients.filter(client => client.id !== clientId);
-  });
-}
+  })
+})
 
-app.get('/sync', eventsHandler);
-
-function sendEventsToAll(newInfo) {
-  clients.forEach(client => client.response.write(`data: ${JSON.stringify(newInfo)}\n\n`))
-}
-
-async function handleCueList(req, res, next) {
+app.post('/cue-list', async (req, res, next) => {
   const newInfo = req.body
-  log.push(newInfo)
-  res.json(newInfo)
-  return sendEventsToAll(newInfo)
-  // TODO: save to local json
-}
+  const newInfoString = JSON.stringify(newInfo)
 
-app.post('/cue-list', handleCueList)
+  log.push(newInfo)
+
+  res.json(newInfo)
+  
+  clients.forEach(client => client.response.write(`data: ${newInfoString}\n\n`))
+  
+  fs.writeFile(jsonPath, newInfoString, { flag: 'w+' }, err => {
+    if (err) {
+      console.error(err)
+    }
+  })
+
+  return next()
+})
 
 export default app
