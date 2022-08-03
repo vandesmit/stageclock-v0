@@ -1,15 +1,8 @@
 <script setup>
-const props = defineProps({
-  cueList: {
-    type: Array,
-    default: () => ([])
-  }
-})
-
 const emit = defineEmits(['secondsRemaining', 'currentCueId'])
 
 const listening = ref(0)
-const cueList = ref(props.cueList)
+const cueList = ref([])
 
 // const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.durationRemaining) || cueList.value[0] || {} )
 const cue = computed(() => cueList.value.find(c => c.startedAt))
