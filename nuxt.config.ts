@@ -8,4 +8,11 @@ export default defineNuxtConfig({
   serverMiddleware: [
     { path: "/server-api", handler: "~/server-middleware/api.ts" },
   ],
+  vite: {
+    server: {
+      watch: {
+        ignored: ['**/database.json']
+      }
+    },
+  },
 })
