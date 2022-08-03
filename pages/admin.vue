@@ -73,6 +73,12 @@ const updateCue = async (cue) => {
   syncCueList()
 }
 
+const deleteCue = (id) => {
+  if (confirm('Are you sure you want to delete a cue?')) {
+    cueList.value = cueList.value.filter(cue => cue.id !== id)
+  }
+}
+
 const startCue = (id) => {
   // get start time
   const startedAt = now()
@@ -114,7 +120,6 @@ const setSecondsRemaining = seconds => secondsRemaining.value = seconds
 
 const setCurrentCueId = (id) => {
   currentCueId.value = id
-  console.log('setCurrentCueId', id)
 }
 
 const toggleIsEditable = () => isEditable.value = !isEditable.value
@@ -129,8 +134,8 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
  */
 </script>
 <template>
-  <div>
-    <div class="flex min-h-screen w-screen flex-col bg-gray-900 p-2 pb-12">
+  <div class="min-h-screen w-screen bg-gray-900">
+    <div class="p-2 pb-12">
       <Clock
         @seconds-remaining="setSecondsRemaining"
         @current-cue-id="setCurrentCueId"
@@ -138,14 +143,17 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
       <template v-if="isEditable">
         <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
           <div v-for="(cue, key) in cueList" :key="`edit-${cue.id}`" class="flex py-3 px-1">
-            <div class="flex grow flex-col">
-              <input v-model="cueList[key].description" class="cue-name" />
-              <div class="flex   text-white">
-                <div class="basis-1/3">{{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}</div>
-                <div class="basis-1/3">{{ cue.duration }}</div>
-                <div class="basis-1/3">{{ cue.durationRemaining }}</div>
+            <div class="flex flex-col">
+              <input v-model="cueList[key].description"/>
+              <div class="flex">
+                <select v-model="cueList[key].type">
+                  <option v-for="(key, value) in cueTypeOptions" :key="key" :value="value">{{ value }}</option>
+                </select>
+                <input v-model="cueList[key].duration" type="number">
+                <input v-model="cueList[key].durationRemaining" type="number">
               </div>
             </div>
+            <button @click="deleteCue(cue.id)">DEL</button>
           </div>
         </div>
         <button
@@ -200,20 +208,36 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
         </div>
       </template>
     </div>
-    <button
-      v-if="isEditable"
-      @click="() => {toggleIsEditable(); syncCueList()}"
-      class="btn sticky bottom-0 w-[100%] rounded-t"
-    >
-      SAVE & STOP
-    </button>
-    <button
-      v-else
-      @click="toggleIsEditable"
-      class="btn sticky bottom-0 w-[100%] rounded-t"
-    >
-      EDIT CUE LIST
-    </button>
+    <div class="sticky bg-gray-900 bottom-0">
+      <div v-if="currentCueId && secondsRemaining">
+        <button
+          @click="stopCue(currentCueId)"
+          class="btn w-[50%] rounded mb-2"
+        >
+          STOP
+        </button>
+        <button
+          @click="pauseCue(currentCueId)"
+          class="btn w-[50%] rounded mb-2"
+        >
+          PAUSE
+        </button>
+      </div>
+      <button
+        v-if="isEditable"
+        @click="() => {toggleIsEditable(); syncCueList()}"
+        class="btn w-[100%] rounded-t"
+      >
+        SAVE & STOP
+      </button>
+      <button
+        v-else
+        @click="toggleIsEditable"
+        class="btn w-[100%] rounded-t"
+      >
+        EDIT CUE LIST
+      </button>
+    </div>
   </div>
 </template>
 <style scoped lang="scss">
