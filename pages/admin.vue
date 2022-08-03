@@ -3,7 +3,6 @@ import { nanoid } from "nanoid"
 const listening = ref(0)
 const isEditable = ref(false)
 const cueDefaults = {
-  id: nanoid(48),
   description: 'New item',
   duration: 300,
   type: 'continue',
@@ -51,6 +50,7 @@ const cueList = ref([])
 
 const addCue = (cue) => {
   cueList.value.push({
+    id: nanoid(48),
     ...cueDefaults,
     ...cue,
   })
@@ -137,7 +137,7 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
       />
       <template v-if="isEditable">
         <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
-          <div v-for="(cue, key) in cueList" :key="cue.id" class="flex py-3 px-1">
+          <div v-for="(cue, key) in cueList" :key="`edit-${cue.id}`" class="flex py-3 px-1">
             <div class="flex grow flex-col">
               <input v-model="cueList[key].description" class="cue-name" />
               <div class="flex   text-white">
@@ -203,14 +203,14 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
     <button
       v-if="isEditable"
       @click="() => {toggleIsEditable(); syncCueList()}"
-      class="btn sticky bottom-0 w-[100%]"
+      class="btn sticky bottom-0 w-[100%] rounded-t"
     >
       SAVE & STOP
     </button>
     <button
       v-else
       @click="toggleIsEditable"
-      class="btn sticky bottom-0 w-[100%]"
+      class="btn sticky bottom-0 w-[100%] rounded-t"
     >
       EDIT CUE LIST
     </button>
@@ -218,7 +218,7 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
 </template>
 <style scoped lang="scss">
 .btn {
-  @apply font-bold py-2 px-4 rounded bg-blue-500 text-white;
+  @apply font-bold py-2 px-4 bg-blue-500 text-white;
 
   &:hover {
     @apply bg-blue-700;
