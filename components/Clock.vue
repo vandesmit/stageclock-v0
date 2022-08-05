@@ -1,13 +1,17 @@
 <script setup>
-const emit = defineEmits(['secondsRemaining', 'currentCueId'])
+const emit = defineEmits(['secondsRemaining', 'currentCueId', 'isOverTime'])
 
 const listening = ref(0)
 const cueList = ref([])
+const currentCueId = ref(null)
 
 // const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.durationRemaining) || cueList.value[0] || {} )
-const cue = computed(() => cueList.value.find(c => c.startedAt))
+const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.id === currentCueId.value))
 
-watch(cue, value => emit('currentCueId', value && value.id))
+watch(cue, (value) => {
+  emit('currentCueId', value && value.id)
+  if (value) { currentCueId.value = value.id}
+})
 
 const now = () => new Date().getTime() / 1000
 
@@ -128,7 +132,9 @@ const setTimer = (date) => {
   if (duration && startedAt && secondsRemaining.value <= 0) {
     switch(type) {
       case 'negative':
-        timer.overTime = true
+        if (secondsRemaining.value < 0) {
+          timer.overTime = true
+        }
         break
       case 'stop':
         updateCue({
@@ -145,13 +151,11 @@ const setTimer = (date) => {
         })
         startNextCue()
         break
-      default:
-        timer.overTime = true
-        break
     }
   } else {
     timer.overTime = false
   }
+  emit('isOverTime', timer.overTime)
   emit('secondsRemaining', secondsRemaining.value)
 
   // calculate seperate times

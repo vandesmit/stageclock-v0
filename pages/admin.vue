@@ -3,6 +3,7 @@ import { nanoid } from "nanoid"
 
 const listening = ref(0)
 const isEditable = ref(false)
+const isClockVisible = ref(true)
 const cueDefaults = {
   description: 'New item',
   duration: 300,
@@ -51,7 +52,7 @@ const sync = async () => {
 const cueList = ref([])
 
 // Add a cue to the cue list
-const addCue = (cue) => {
+const createCue = (cue) => {
   cueList.value.push({
     id: nanoid(48),
     ...cueDefaults,
@@ -66,7 +67,7 @@ const updateCue = (cue) => {
 
   if (typeof cueKey === 'undefined' || cueKey < 0) {
     console.warn('didn\'t find cue by key to update, so adding new cue')
-    addCue(cue)
+    createCue(cue)
   }
   cueList.value[cueKey] = {
     ...cueList.value[cueKey],
@@ -117,15 +118,24 @@ const stopCue = id => updateCue({
   durationRemaining: null,
 })
 
-// timer value in seconds (can be negative)
 const secondsRemaining = ref(0)
-
-// current timer cue id
 const currentCueId = ref(null)
+const isOverTime = ref(false)
 
 const setSecondsRemaining = seconds => secondsRemaining.value = seconds
 const setCurrentCueId = id => currentCueId.value = id
+const setIsOverTime = overTime => isOverTime.value = overTime
 const toggleIsEditable = () => isEditable.value = !isEditable.value
+
+const getCuePercentage = (cue) => {
+  const remaining = cue.id === currentCueId.value && cue.startedAt ? secondsRemaining.value : cue.durationRemaining
+  const percentage = (cue.duration - remaining) / cue.duration * 100
+  console.log(cue.description, { percentage, remaining, typeof: typeof remaining })
+
+  if (percentage > 100) return 100
+  if (!percentage || typeof remaining !== 'number') return 0
+  return percentage
+}
 
 /**
  * NOTES
@@ -140,8 +150,10 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
   <div class="min-h-screen w-screen bg-gray-900">
     <div class="p-2 pb-12">
       <Clock
+        v-show="isClockVisible"
         @seconds-remaining="setSecondsRemaining"
         @current-cue-id="setCurrentCueId"
+        @is-over-time="setIsOverTime"
       />
       <template v-if="isEditable">
         <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
@@ -160,52 +172,76 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
           </div>
         </div>
         <button
-          @click="addCue"
+          @click="createCue"
           class="btn"
         >
           ADD CUE
         </button>
       </template>
       <template v-else>
-        <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8  text-white">
-          <div v-for="cue in cueList" :key="cue.id" class="flex py-3 px-1">
-            <div class="flex grow flex-col">
-              <div class="cue-name">{{ cue.description }}</div>
-              <div class="flex justify-items-stretch">
-                <div class="basis-1/3">{{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}</div>
-                <div class="basis-1/3">{{ cue.duration }}</div>
-                <div class="basis-1/3">{{ cue.durationRemaining }}</div>
-              </div>
+        <div
+          v-if="cueList.length"
+          class="cue-list divide-y divide-slate-700 mt-8 text-white"
+          :class="{
+            'over-time': isOverTime,
+          }"
+        >
+          <div
+            v-for="cue in cueList"
+            :key="cue.id"
+            class="flex py-3 px-1 cue"
+            :class="{
+              'current': cue.id === currentCueId,
+              'active': cue.id === currentCueId && cue.startedAt,
+            }"
+            :style="{
+              '--background-width': `${ getCuePercentage(cue) }%`,
+            }"
+          >
+            <div class="flex grow space-x-4">
+              <div class="grow">{{ cue.description }}</div>
+              <div>{{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}</div>
+              <div>{{ cue.duration }}</div>
+              <div>{{ cue.durationRemaining }}</div>
             </div>
             <div>
-              <button
-                v-if="!cue.startedAt && !cue.durationRemaining"
-                @click="startCue(cue.id)"
-                class="btn btn-green btn-action"
-              >
-                {{ cue.durationRemaining === 0 ? 'Restart' : 'Start' }}
-              </button>
-              <button 
-                v-else
-                @click="stopCue(cue.id)"
-                class="btn btn-orange btn-action"
-              >
-                {{ cue.startedAt ? 'Stop' : 'Reset' }}
-              </button>
-              <button
-                v-if="!cue.startedAt && cue.durationRemaining > 0"
-                @click="startCue(cue.id)"
-                class="btn btn-green btn-action"
-              >
-                Resume
-              </button>
-              <button
-                v-else-if="cue.startedAt"
-                @click="pauseCue(cue.id)"
-                class="btn btn-orange btn-action"
-              >
-                Pause
-              </button>
+              <template v-if="!cue.startedAt">
+                <button
+                  v-if="!cue.durationRemaining"
+                  @click="startCue(cue.id)"
+                  class="btn btn-green btn-action"
+                >
+                  {{ cue.durationRemaining === 0 ? 'Restart' : 'Start' }}
+                </button>
+                <template v-else>
+                  <button
+                    @click="stopCue(cue.id)"
+                    class="btn btn-orange btn-action"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    @click="startCue(cue.id)"
+                    class="btn btn-green btn-action"
+                  >
+                    Resume
+                  </button>
+                </template>
+              </template>
+              <template v-else>
+                <button 
+                  @click="stopCue(cue.id)"
+                  class="btn btn-orange btn-action"
+                >
+                  Stop
+                </button>
+                <button
+                  @click="pauseCue(cue.id)"
+                  class="btn btn-orange btn-action"
+                >
+                  Pause
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -270,5 +306,52 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
       @apply bg-orange-700;
     }
   }
+}
+.cue {
+  position: relative;
+  z-index: 1;
+
+  &:before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: var(--background-width);
+    @apply bg-gray-800
+  }
+
+  &.current:before {
+    @apply bg-gray-600
+  }
+
+  &.active:before {
+    -webkit-transition: width 1s linear 0s;
+    -moz-transition: width 1s linear 0s;
+    -o-transition: width 1s linear 0s;
+    transition: width 1s linear 0s;
+  }
+
+      // 'text-red-500': timer.overTime,
+      // 'text-gray-800': !cue,
+  // &.blink:before {
+	// 	animation: blinkingBackground 1s infinite;
+	// }
+}
+.cue-list.over-time .cue.active:before {
+  animation: blinkingBackground 1s infinite;
+}
+@keyframes blinkingBackground{
+  // 0%		{ background-color: #10c018;}
+  // 25%		{ background-color: #1056c0;}
+  // 50%		{ background-color: #ef0a1a;}
+  // 75%		{ background-color: #254878;}
+  // 100%	{ background-color: #04a1d5;}
+  0%    { @apply bg-gray-600 }
+  // 20%   { @apply bg-gray-600 }
+  50%   { @apply bg-red-500 }
+  // 80%   { @apply bg-gray-600 }
+  100%  { @apply bg-gray-600 }
 }
 </style>
