@@ -10,11 +10,14 @@ export default defineNuxtConfig({
       { rel: 'mask-icon', href: '/safari-pinned-tab.svg', color: '#5bbad5' },
     ],
     meta: [
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-title', content: 'Stage Clock' },
       { name: 'application-name', content: 'Stage Clock' },
       { name: 'msapplication-TileColor', content: '#da532c' },
       { name: 'theme-color', content: '#1e293b' },
     ],
+    viewport: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no',
+    title: 'Stage Clock',
   },
   modules: ['@nuxtjs/tailwindcss'],
   serverMiddleware: [

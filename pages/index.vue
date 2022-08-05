@@ -1,9 +1,4 @@
 <script setup>
-useHead({
-  title: 'Stage Clock',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit = no',
-})
-
 const fullscreen = ref(false)
 const fullscreenContainer = ref(null)
 
