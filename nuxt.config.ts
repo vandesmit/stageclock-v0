@@ -23,7 +23,7 @@ export default defineNuxtConfig({
   },
   modules: ['@nuxtjs/tailwindcss'],
   serverMiddleware: [
-    { path: "/server-api", handler: "~/server-middleware/api.ts" },
+    { path: '/api', handler: '~/api' },
   ],
   typescript: {
     shim: false

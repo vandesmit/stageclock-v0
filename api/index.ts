@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import fs, { read } from 'fs'
+import fs from 'fs'
 
 const app = express()
 const jsonPath = './database.json'
