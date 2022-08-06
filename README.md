@@ -33,15 +33,3 @@ yarn Start
 ```
 
 Listen on http://localhost:3002 OR http://localhost:3000
-
-## Pages
-
-Front-end
-
-* / Show the timer and Clock
-* /admin Edit and trigger cue list
-
-Server api
-
-* /server-api/logs Show all logs
-* /server-api/clients Show number of connected clients

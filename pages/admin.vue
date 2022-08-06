@@ -19,7 +19,7 @@ const now = () => new Date().getTime() / 1000
 
 // Start listening for new events
 if (!listening.value && typeof EventSource !== 'undefined') {
-  const events = new EventSource('/server-api/sync')
+  const events = new EventSource('/api/sync')
 
   // set callback for events
   events.onmessage = ({ data }) => {
@@ -41,7 +41,7 @@ if (!listening.value && typeof EventSource !== 'undefined') {
 
 // sync cue list with server-side
 const sync = async () => {
-  await $fetch( '/server-api/cue-list', {
+  await $fetch( '/api/cue-list', {
     method: 'POST',
     body: {
       cueList: cueList.value
