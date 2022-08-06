@@ -1,8 +1,13 @@
 import express from 'express'
 import cors from 'cors'
 import Redis from 'ioredis'
+import fs from 'fs'
 
-const redis = new Redis(process.env.REDIS_TLS_URL || process.env.REDIS_URL)
+const isLogging = process.env.SERVER_LOG
+const redisConfig = process.env.REDIS_TLS_URL || process.env.REDIS_URL
+const isRedisActive = !!redisConfig || !!process.env.REDIS_ACTIVE
+const redis = isRedisActive && new Redis(process.env.REDIS_TLS_URL || process.env.REDIS_URL)
+const jsonPath = './database.json'
 const app = express()
 const welcomeMessage = { log: 'Welcome! Api is running and connected' }
 const log = [ welcomeMessage ]
@@ -30,24 +35,45 @@ const defaultDatabase = {
 }
 
 const readDatabase = ({
-  onSuccess = data => data,
+  onSuccess = data => isLogging && console.log(data),
   onError = console.error,
 }) => {
-  redis.get('database', (err, result) => {
-    if (err || !result) {
-      onError(err)
-      console.log('reading DB Error: ', { err, result })
-    } else {
-      const resultObj = JSON.parse(result)
-      onSuccess(resultObj)
-      console.log('reading DB: ', resultObj)
-    }
-  })
+  if (isRedisActive) {
+    redis.get('database', (err, result) => {
+      if (err || !result) {
+        onError(err)
+        if (isLogging) console.log('reading DB Error: ', { err, result })
+      } else {
+        onSuccess(JSON.parse(result))
+        if (isLogging) console.log('reading DB: ', JSON.parse(result))
+      }
+    })
+  } else {
+
+    fs.access(jsonPath, fs.constants.F_OK, (err) => {
+      if (err) {
+        onError(err)
+        return
+      }
+  
+      fs.readFile(jsonPath, 'utf8', (err, data) => {
+        if (err) {
+          if (isLogging) console.error(err)
+          onError(err)
+          return
+        }
+        onSuccess(JSON.parse(data))
+      })
+    })
+  }
 }
 
-const writeDatabase = async (data) => {
-  const response = await redis.set("database",  JSON.stringify(data))
-  console.log('writing DB: ', response)
+const writeDatabase = (data) => {
+  if (isRedisActive) {
+    redis.set("database",  JSON.stringify(data)/*, console.log*/)
+  } else {
+    fs.writeFile(jsonPath, JSON.stringify(data, null, 2), { flag: 'w+' }, console.error)
+  }
 }
 
 // Write default database when there is no database present.

@@ -106,3 +106,4 @@ dist
 
 # Project specific ignores
 database.json
+dump.rdb
