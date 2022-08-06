@@ -1,9 +1,9 @@
 import express from 'express'
 import cors from 'cors'
-import fs from 'fs'
+import Redis from 'ioredis'
 
+const redis = new Redis(process.env.REDIS_TLS_URL || process.env.REDIS_URL)
 const app = express()
-const jsonPath = './database.json'
 const welcomeMessage = { log: 'Welcome! Api is running and connected' }
 const log = [ welcomeMessage ]
 const defaultDatabase = {
@@ -33,30 +33,21 @@ const readDatabase = ({
   onSuccess = data => data,
   onError = console.error,
 }) => {
-  fs.access(jsonPath, fs.constants.F_OK, (err) => {
-    if (err) {
+  redis.get('database', (err, result) => {
+    if (err || !result) {
       onError(err)
-      return
+      console.log('reading DB Error: ', { err, result })
+    } else {
+      const resultObj = JSON.parse(result)
+      onSuccess(resultObj)
+      console.log('reading DB: ', resultObj)
     }
-
-    fs.readFile(jsonPath, 'utf8', (err, dataString) => {
-      if (err) {
-        console.error(err);
-        onError(err)
-        return;
-      }
-      const dataObject = JSON.parse(dataString)
-      onSuccess(dataObject)
-    })
   })
 }
 
-const writeDatabase = (data) => {
-  fs.writeFile(jsonPath, JSON.stringify(data, null, 2), { flag: 'w+' }, err => {
-    if (err) {
-      console.error(err)
-    }
-  })
+const writeDatabase = async (data) => {
+  const response = await redis.set("database",  JSON.stringify(data))
+  console.log('writing DB: ', response)
 }
 
 // Write default database when there is no database present.
