@@ -5,8 +5,8 @@ import fs from 'fs'
 
 const isLogging = process.env.SERVER_LOG
 const redisConfig = process.env.REDIS_TLS_URL || process.env.REDIS_URL
-const isRedisActive = !!redisConfig || !!process.env.REDIS_ACTIVE
-const redis = isRedisActive && new Redis(process.env.REDIS_TLS_URL || process.env.REDIS_URL)
+const hasRedisConfig = !!redisConfig || !!process.env.REDIS_ACTIVE
+const redis = hasRedisConfig && new Redis(redisConfig)
 const jsonPath = './database.json'
 const app = express()
 const welcomeMessage = { log: 'Welcome! Api is running and connected' }
@@ -38,7 +38,7 @@ const readDatabase = ({
   onSuccess = data => isLogging && console.log(data),
   onError = console.error,
 }) => {
-  if (isRedisActive) {
+  if (redis) {
     redis.get('database', (err, result) => {
       if (err || !result) {
         onError(err)
@@ -69,7 +69,7 @@ const readDatabase = ({
 }
 
 const writeDatabase = (data) => {
-  if (isRedisActive) {
+  if (redis) {
     redis.set("database",  JSON.stringify(data)/*, console.log*/)
   } else {
     fs.writeFile(jsonPath, JSON.stringify(data, null, 2), { flag: 'w+' }, console.error)
@@ -77,9 +77,16 @@ const writeDatabase = (data) => {
 }
 
 // Write default database when there is no database present.
-readDatabase({
-  onError: () => writeDatabase(defaultDatabase),
-})
+let isDatabaseReady = false
+if (!isDatabaseReady) {
+  readDatabase({
+    onError: () => {
+      writeDatabase(defaultDatabase)
+      isDatabaseReady = true
+    },
+    onSuccess: () => isDatabaseReady = true
+  })
+}
 
 let clients = []
 
