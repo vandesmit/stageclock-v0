@@ -136,15 +136,6 @@ const getCuePercentage = (cue) => {
   if (!percentage || typeof remaining !== 'number') return 0
   return percentage
 }
-
-/**
- * NOTES
- * 
- * 
- * Features
- * * re-order
- * * default list
- */
 </script>
 <template>
   <div class="min-h-screen w-screen bg-gray-900">
