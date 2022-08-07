@@ -2,12 +2,12 @@
 import { nanoid } from "nanoid"
 
 const listening = ref(0)
-const isEditable = ref(false)
+const isEditable = ref(true)
 const isClockVisible = ref(true)
 const cueDefaults = {
-  description: 'New item',
-  duration: 300,
-  type: 'continue',
+  description: 'cue item',
+  duration: 0,
+  type: 'negative',
 }
 const cueTypeOptions = {
   'continue': 'Continue',
@@ -122,7 +122,7 @@ const secondsRemaining = ref(0)
 const currentCueId = ref(null)
 const isOverTime = ref(false)
 
-const setSecondsRemaining = seconds => secondsRemaining.value = seconds
+const changeSecondsRemaining = seconds => secondsRemaining.value = seconds
 const setCurrentCueId = id => currentCueId.value = id
 const setIsOverTime = overTime => isOverTime.value = overTime
 const toggleIsEditable = () => isEditable.value = !isEditable.value
@@ -130,44 +130,125 @@ const toggleIsEditable = () => isEditable.value = !isEditable.value
 const getCuePercentage = (cue) => {
   const remaining = cue.id === currentCueId.value && cue.startedAt ? secondsRemaining.value : cue.durationRemaining
   const percentage = (cue.duration - remaining) / cue.duration * 100
-  console.log(cue.description, { percentage, remaining, typeof: typeof remaining })
+  // console.log(cue.description, { percentage, remaining, typeof: typeof remaining })
 
   if (percentage > 100) return 100
   if (!percentage || typeof remaining !== 'number') return 0
   return percentage
 }
+
+const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
+
+const getHours = (seconds = 0) => (parseInt(parseInt(seconds) / 3600))
+const getMinutes = (seconds = 0) => (parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60)
+const getSeconds = (seconds = 0) => (parseInt(seconds) - (parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60) * 60 - parseInt(parseInt(seconds) / 3600) * 3600)
+
+const convertSecondsToTime = (value) => {
+  if (typeof value !== 'number') return `00:00`
+  const hours = parseInt(value / 3600)
+  const minutes = parseInt(value / 60) - hours * 60
+  const seconds = parseInt(value) - minutes * 60 - hours * 3600
+  let text = hours ? `${checkSingleDigit(hours)}:` : ''
+  return `${text}${checkSingleDigit(minutes)}:${checkSingleDigit(seconds)}`
+}
+
+const changeHours = (x, y = 0, z = 0) => { cueList.value[x].duration = parseInt(cueList.value[x].duration) + ((parseInt(y) - parseInt(z)) * 3600) }
+const changeMinutes = (x, y = 0, z = 0) => { cueList.value[x].duration = parseInt(cueList.value[x].duration) + ((parseInt(y) - parseInt(z)) * 60) }
+const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseInt(cueList.value[x].duration) + parseInt(y) - parseInt(z) }
+
 </script>
 <template>
   <div class="min-h-screen w-screen bg-gray-900">
-    <div class="p-2 pb-12">
+    <div class="pb-12 flex flex-col items-center">
       <Clock
         v-show="isClockVisible"
-        @seconds-remaining="setSecondsRemaining"
+        @seconds-remaining="changeSecondsRemaining"
         @current-cue-id="setCurrentCueId"
         @is-over-time="setIsOverTime"
       />
       <template v-if="isEditable">
-        <div v-if="cueList.length" class="cue-list divide-y divide-slate-700 mt-8">
-          <div v-for="(cue, key) in cueList" :key="`edit-${cue.id}`" class="flex py-3 px-1">
-            <div class="flex flex-col">
-              <input v-model="cueList[key].description"/>
-              <div class="flex">
-                <select v-model="cueList[key].type">
-                  <option v-for="(key, value) in cueTypeOptions" :key="key" :value="value">{{ value }}</option>
-                </select>
-                <input v-model="cueList[key].duration" type="number">
-                <input v-model="cueList[key].durationRemaining" type="number">
+        <div class="cue-list divide-y divide-slate-700 mt-8 w-full max-w-sm">
+          <div v-for="(cue, key) in cueList" :key="`edit-${cue.id}`" class="py-3 w-full">
+            <div class="flex flex-wrap -mx-3 mb-0">
+              <div class="w-2/3 px-3">
+                <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-1" for="description">
+                  Description
+                </label>
+                <input
+                  v-model="cueList[key].description"
+                  class="appearance-none block w-full bg-gray-200 text-gray-700 border border-grey-200 rounded py-2 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
+                  id="description"
+                  type="text"
+                  placeholder="Cue name"
+                >
+              </div>
+              <div class="w-1/3 px-3">
+                <div class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-1">
+                  Actions
+                </div>
+                <div class="relative">
+                  <button @click="deleteCue(cue.id)" class="btn rounded">Delete</button>
+                </div>
               </div>
             </div>
-            <button @click="deleteCue(cue.id)">DEL</button>
+            <div class="flex flex-wrap -mx-3 mb-0">
+              <div class="w-1/2 px-3 mb-2 md:mb-0">
+                <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-1" for="duration-hours">
+                  Duration
+                </label>
+                <input
+                  :value="getHours(cue.duration)"
+                  @input="(e) => changeHours(key, e.target.value, getHours(cue.duration))"
+                  class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                  type="number"
+                  placeholder="00"
+                  min="0" max="24">
+                <span class="text-white"> : </span>
+                <input
+                  :value="getMinutes(cue.duration)"
+                  @input="e => changeMinutes(key, e.target.value, getMinutes(cue.duration))"
+                  class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                  type="number"
+                  placeholder="00"
+                  min="0" max="59">
+                <span class="text-white"> : </span>
+                <input
+                  :value="getSeconds(cue.duration)"
+                  @input="e => changeSeconds(key, e.target.value, getSeconds(cue.duration))"
+                  class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                  type="number"
+                  placeholder="00"
+                  min="0" max="59">
+
+              </div>
+              <div class="w-1/2 px-3 mb-2 md:mb-0">
+                <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-1" for="type">
+                  When finished
+                </label>
+                <div class="relative">
+                  <select
+                    v-model="cueList[key].type"
+                    class="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                    id="type"
+                  >
+                    <option v-for="(value, key) in cueTypeOptions" :key="key" :value="key">{{ value }}</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="py-3 w-full">
+            <button
+              @click="createCue"
+              class="btn"
+            >
+              Add a cue
+            </button>
           </div>
         </div>
-        <button
-          @click="createCue"
-          class="btn"
-        >
-          ADD CUE
-        </button>
       </template>
       <template v-else>
         <div
@@ -192,8 +273,8 @@ const getCuePercentage = (cue) => {
             <div class="flex grow space-x-4">
               <div class="grow">{{ cue.description }}</div>
               <div>{{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}</div>
-              <div>{{ cue.duration }}</div>
-              <div>{{ cue.durationRemaining }}</div>
+              <div>{{ convertSecondsToTime(cue.duration) }}</div>
+              <div>{{ convertSecondsToTime(cue.durationRemaining) }}</div>
             </div>
             <div>
               <template v-if="!cue.startedAt">
@@ -238,7 +319,7 @@ const getCuePercentage = (cue) => {
         </div>
       </template>
     </div>
-    <div class="sticky bg-gray-900 bottom-0">
+    <div class="bg-gray-900">
       <div v-if="currentCueId && secondsRemaining">
         <button
           @click="stopCue(currentCueId)"

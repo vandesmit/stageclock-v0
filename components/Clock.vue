@@ -4,6 +4,7 @@ const emit = defineEmits(['secondsRemaining', 'currentCueId', 'isOverTime'])
 const listening = ref(0)
 const cueList = ref([])
 const currentCueId = ref(null)
+const hasCueLongerThan1Hour = computed(() => !!cueList.value.find(c => c.duration >= 3600))
 
 // const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.durationRemaining) || cueList.value[0] || {} )
 const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value.find(c => c.id === currentCueId.value))
@@ -185,7 +186,7 @@ setInterval(() => {
       'text-red-500': timer.overTime,
       'text-gray-800': !cue,
     }"
-  >{{ timer.hours }}:{{ timer.minutes }}:{{ timer.seconds }}</div>
+  ><span v-show="hasCueLongerThan1Hour">{{ timer.hours }}:</span>{{ timer.minutes }}:{{ timer.seconds }}</div>
   <div class="text-[5vw] leading-none text-center mt-2">
     {{ cue && cue.description && cue.description || '-' }}
   </div>
