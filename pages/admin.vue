@@ -2,7 +2,7 @@
 import { nanoid } from "nanoid"
 
 const listening = ref(0)
-const isEditable = ref(true)
+const isEditable = ref(false)
 const isClockVisible = ref(true)
 const cueDefaults = {
   description: 'cue item',
@@ -200,25 +200,19 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
                   :value="getHours(cue.duration)"
                   @input="(e) => changeHours(key, e.target.value, getHours(cue.duration))"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                  type="number"
-                  placeholder="00"
-                  min="0" max="24">
+                  type="number">
                 <span class="text-white"> : </span>
                 <input
                   :value="getMinutes(cue.duration)"
                   @input="e => changeMinutes(key, e.target.value, getMinutes(cue.duration))"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                  type="number"
-                  placeholder="00"
-                  min="0" max="59">
+                  type="number">
                 <span class="text-white"> : </span>
                 <input
                   :value="getSeconds(cue.duration)"
                   @input="e => changeSeconds(key, e.target.value, getSeconds(cue.duration))"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                  type="number"
-                  placeholder="00"
-                  min="0" max="59">
+                  type="number">
 
               </div>
               <div class="w-1/2 px-3 mb-2 md:mb-0">
@@ -274,7 +268,6 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
               <div class="grow">{{ cue.description }}</div>
               <div>{{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}</div>
               <div>{{ convertSecondsToTime(cue.duration) }}</div>
-              <div>{{ convertSecondsToTime(cue.durationRemaining) }}</div>
             </div>
             <div>
               <template v-if="!cue.startedAt">
