@@ -274,38 +274,65 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
                 <button
                   v-if="!cue.durationRemaining"
                   @click="startCue(cue.id)"
-                  class="btn btn-green btn-action"
+                  class="btn btn-green btn-icon btn-icon--fat rounded ml-10"
+                  :aria-label="`${cue.durationRemaining === 0 ? 'Restart' : 'Start'} ${cue.description}.`"
+                  :title="cue.durationRemaining === 0 ? 'restart' : 'start'"
                 >
-                  {{ cue.durationRemaining === 0 ? 'Restart' : 'Start' }}
+                  <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M134.996 68.6548C145.864 74.2324 145.864 89.7676 134.996 95.3452L47.8488 140.069C37.8669 145.192 26 137.944 26 126.724L26 37.276C26 26.0563 37.8668 18.808 47.8488 23.9308L134.996 68.6548Z" stroke="currentColor" stroke-width="8"/>
+                  </svg>
                 </button>
                 <template v-else>
-                  <button
-                    @click="stopCue(cue.id)"
-                    class="btn btn-orange btn-action"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    @click="startCue(cue.id)"
-                    class="btn btn-green btn-action"
-                  >
-                    Resume
-                  </button>
+                  <div class="inline-flex">
+                    <button
+                      @click="stopCue(cue.id)"
+                      class="btn btn-orange btn-icon btn-icon--fat rounded-l"
+                      :aria-label="`Reset ${cue.description}.`"
+                      title="reset"
+                    >
+                      <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M60.6047 70.0799C52.7454 76.0834 52.7454 87.9166 60.6047 93.9201L118.394 138.064C128.266 145.605 142.5 138.566 142.5 126.144L142.5 37.8556C142.5 25.4339 128.266 18.3951 118.394 25.9355L60.6047 70.0799Z" stroke="currentColor" stroke-width="8"/>
+                        <rect x="24" y="22" width="30" height="120" rx="15" stroke="currentColor" stroke-width="8"/>
+                      </svg>
+                    </button>
+                    <button
+                      @click="startCue(cue.id)"
+                      class="btn btn-green btn-icon btn-icon--fat rounded-r"
+                      :aria-label="`Resume ${cue.description}.`"
+                      title="resume"
+                    >
+                      <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M147.395 70.0799C155.255 76.0834 155.255 87.9166 147.395 93.9201L89.6055 138.064C79.7343 145.605 65.5 138.566 65.5 126.144L65.5 37.8556C65.5 25.4339 79.7343 18.3951 89.6055 25.9355L147.395 70.0799Z" stroke="currentColor" stroke-width="8"/>
+                        <rect x="13" y="22" width="30" height="120" rx="15" stroke="currentColor" stroke-width="8"/>
+                      </svg>
+                    </button>
+                  </div>
                 </template>
               </template>
               <template v-else>
-                <button 
-                  @click="stopCue(cue.id)"
-                  class="btn btn-orange btn-action"
-                >
-                  Stop
-                </button>
-                <button
-                  @click="pauseCue(cue.id)"
-                  class="btn btn-orange btn-action"
-                >
-                  Pause
-                </button>
+                <div class="inline-flex">
+                  <button 
+                    @click="stopCue(cue.id)"
+                    class="btn btn-orange btn-icon btn-icon--fat rounded-l"
+                    :aria-label="`Stop ${cue.description}.`"
+                    title="stop"
+                  >
+                    <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="27" y="27" width="110" height="110" rx="15" stroke="currentColor" stroke-width="8"/>
+                    </svg>
+                  </button>
+                  <button
+                    @click="pauseCue(cue.id)"
+                    class="btn btn-orange btn-icon btn-icon--fat rounded-r"
+                    :aria-label="`Pause ${cue.description}.`"
+                    title="pause"
+                  >
+                    <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="96" y="17" width="45" height="130" rx="15" stroke="currentColor" stroke-width="8"/>
+                      <rect x="24" y="17" width="43.3333" height="130" rx="15" stroke="currentColor" stroke-width="8"/>
+                    </svg>
+                  </button>
+                </div>
               </template>
             </div>
           </div>
@@ -313,33 +340,32 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
       </template>
     </div>
     <div class="bg-gray-900">
-      <div v-if="currentCueId && secondsRemaining">
-        <button
-          @click="stopCue(currentCueId)"
-          class="btn w-[50%] rounded mb-2"
-        >
-          STOP
-        </button>
-        <button
-          @click="pauseCue(currentCueId)"
-          class="btn w-[50%] rounded mb-2"
-        >
-          PAUSE
-        </button>
-      </div>
       <button
         v-if="isEditable"
         @click="() => {toggleIsEditable(); sync()}"
-        class="btn w-[100%] rounded-t"
+        class="btn btn-icon btn-icon--lg w-[100%] rounded-t text-center"
+        aria-label="Save cue list and go back."
+        title="save and go back"
       >
-        SAVE & STOP
+        Done editing
+        <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg" class="-mt-2">
+          <rect x="44" y="51" width="87" height="87" rx="15" stroke="currentColor" stroke-width="8"/>
+          <rect x="58.7798" y="71.306" width="8" height="48" rx="4" transform="rotate(-32.7755 58.7798 71.306)" fill="currentColor" stroke="currentColor" stroke-width="8"/>
+          <rect x="142.536" y="33.1998" width="8" height="96" rx="4" transform="rotate(39.4617 142.536 33.1998)" fill="currentColor" stroke="currentColor" stroke-width="8"/>
+        </svg>
       </button>
       <button
         v-else
         @click="toggleIsEditable"
-        class="btn w-[100%] rounded-t"
+        class="btn btn-icon btn-icon--lg w-[100%] rounded-t text-center"
+        aria-label="Edit the cue list."
+        title="edit cue list"
       >
-        EDIT CUE LIST
+        Edit
+        <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg" class="-mt-2">
+          <rect x="26" y="51" width="110" height="87" rx="15" stroke="currentColor" stroke-width="8"/>
+          <path d="M121.137 23.5736C122.129 21.5999 124.534 20.8046 126.508 21.7971V21.7971C128.481 22.7897 129.277 25.1942 128.284 27.1678L89.6455 103.999L86.0719 102.202C84.0983 101.21 83.303 98.805 84.2955 96.8314L121.137 23.5736Z" fill="currentColor" stroke="currentColor" stroke-width="8"/>
+        </svg>
       </button>
     </div>
   </div>
@@ -350,6 +376,38 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
 
   &:hover {
     @apply bg-blue-700;
+  }
+
+  svg {
+    display: inline;
+    height: 1em;
+    width: 1em;
+  }
+
+  &-icon--lg {
+    svg {
+      height: 2em;
+      width: 2em;
+      line-height: 1;
+    }
+  }
+  &-icon--fat {
+    svg > * {
+      stroke-width: 16;
+    }
+  }
+
+  &-icon {
+    @apply p-3;
+    line-height: 1;
+  }
+
+  &-gray {
+    @apply bg-gray-300 hover:bg-gray-400 text-gray-800;
+
+    &:hover {
+      @apply bg-gray-400;
+    }
   }
 
   &-action {
