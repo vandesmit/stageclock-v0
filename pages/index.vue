@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen w-screen bg-gray-900 grid place-content-center">
     <div class="grid grid-cols-2 gap-4 place-content-center">
-
       <nuxt-link
         to="/admin"
         class="btn btn-green"
@@ -16,7 +15,6 @@
       </nuxt-link>
     </div>
   </div>
-
 </template>
 <style scoped lang="scss">
 .btn {

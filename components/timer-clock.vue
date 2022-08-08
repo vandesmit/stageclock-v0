@@ -11,7 +11,7 @@ const cue = computed(() => cueList.value.find(c => c.startedAt) || cueList.value
 
 watch(cue, (value) => {
   emit('currentCueId', value && value.id)
-  if (value) { currentCueId.value = value.id}
+  if (value) { currentCueId.value = value.id }
 })
 
 const now = () => new Date().getTime() / 1000
@@ -23,23 +23,21 @@ if (!listening.value && typeof EventSource !== 'undefined') {
   events.onmessage = ({ data }) => {
     const messageBag = JSON.parse(data)
 
-    console.log('STREAM: ', messageBag)
-
     // set new cue list
     if (messageBag.cueList) {
       cueList.value = messageBag.cueList
     }
 
     if (messageBag.log) {
-      console.log(messageBag.log)
+      console.log(messageBag.log) // eslint-disable-line
     }
   }
 
   listening.value = true
 }
 
-const syncCueList = async (data) => {
-  await $fetch( '/api/cue-list', {
+const syncCueList = async () => {
+  await $fetch('/api/cue-list', {
     method: 'POST',
     body: {
       cueList: cueList.value
@@ -48,11 +46,11 @@ const syncCueList = async (data) => {
 }
 
 const settings = reactive({
-  hideClock: false,
+  hideClock: false
 })
 
 const updateCue = async (newCueValues) => {
-  const cueKey = newCueValues.id && cueList.value.findIndex(cueListItem => {
+  const cueKey = newCueValues.id && cueList.value.findIndex((cueListItem) => {
     return cueListItem.id === newCueValues.id
   })
   if (typeof cueKey === 'undefined' || cueKey < 0) {
@@ -67,7 +65,7 @@ const updateCue = async (newCueValues) => {
 }
 
 const startNextCue = () => {
-  secondsRemaining.value = 0 
+  secondsRemaining.value = 0
   timer.overTime = false
   const currentKey = cueList.value.findIndex(item => item.id === cue.value.id)
   const nextKey = currentKey + 1
@@ -90,7 +88,7 @@ const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
 const clock = reactive({
   hours: '00',
   minutes: '00',
-  seconds: '00',
+  seconds: '00'
 })
 
 const setClock = (date) => {
@@ -104,7 +102,7 @@ const timer = reactive({
   hours: '00',
   minutes: '00',
   seconds: '00',
-  overTime: false,
+  overTime: false
 })
 
 const setTimer = (date) => {
@@ -113,11 +111,11 @@ const setTimer = (date) => {
     duration,
     durationRemaining,
     startedAt,
-    type,
+    type
   } = cue.value || {}
 
   let calculatedRemaining = durationRemaining || duration || 0
-  
+
   // calculate remaining time in seconds
   if (startedAt) {
     calculatedRemaining = parseInt(startedAt) + parseInt(calculatedRemaining) - parseInt(date.getTime() / 1000)
@@ -131,7 +129,7 @@ const setTimer = (date) => {
 
   // if over time
   if (duration && startedAt && secondsRemaining.value <= 0) {
-    switch(type) {
+    switch (type) {
       case 'negative':
         if (secondsRemaining.value < 0) {
           timer.overTime = true
@@ -141,14 +139,14 @@ const setTimer = (date) => {
         updateCue({
           id,
           startedAt: 0,
-          durationRemaining: 0,
+          durationRemaining: 0
         })
         break
       case 'continue':
         updateCue({
           id,
           startedAt: 0,
-          durationRemaining: 0,
+          durationRemaining: 0
         })
         startNextCue()
         break
@@ -178,21 +176,25 @@ setInterval(() => {
 }, 100)
 </script>
 <template>
-<div class="flex h-[100%] w-[100%] flex-col justify-between bg-gray-900 text-white">
-  <div
-    v-if="timer"
-    class="font-mono text-[20vw] leading-none text-center"
-    :class="{
-      'text-red-500': timer.overTime,
-      'text-gray-800': !cue,
-    }"
-  ><span v-show="hasCueLongerThan1Hour">{{ timer.hours }}:</span>{{ timer.minutes }}:{{ timer.seconds }}</div>
-  <div class="text-[5vw] leading-none text-center mt-2">
-    {{ cue && cue.description && cue.description || '-' }}
+  <div class="flex h-[100%] w-[100%] flex-col justify-between bg-gray-900 text-white">
+    <div
+      v-if="timer"
+      class="font-mono text-[20vw] leading-none text-center"
+      :class="{
+        'text-red-500': timer.overTime,
+        'text-gray-800': !cue,
+      }"
+    >
+      <span v-show="hasCueLongerThan1Hour">{{ timer.hours }}:</span>{{ timer.minutes }}:{{ timer.seconds }}
+    </div>
+    <div class="text-[5vw] leading-none text-center mt-2">
+      {{ cue && cue.description && cue.description || '-' }}
+    </div>
+    <div
+      v-if="clock && !settings.hideClock"
+      class="font-mono text-[10vw] leading-none text-right text-gray-600 mt-2"
+    >
+      {{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}
+    </div>
   </div>
-  <div
-    v-if="clock && !settings.hideClock"
-    class="font-mono text-[10vw] leading-none text-right text-gray-600 mt-2"
-  >{{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}</div>
-</div>
 </template>

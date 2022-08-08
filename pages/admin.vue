@@ -1,5 +1,5 @@
 <script setup>
-import { nanoid } from "nanoid"
+import { nanoid } from 'nanoid'
 
 const listening = ref(0)
 const isEditable = ref(false)
@@ -7,12 +7,12 @@ const isClockVisible = ref(true)
 const cueDefaults = {
   description: 'cue item',
   duration: 0,
-  type: 'negative',
+  type: 'negative'
 }
 const cueTypeOptions = {
-  'continue': 'Continue',
-  'negative': 'Go negative',
-  'stop': 'Stop',
+  continue: 'Auto continue',
+  negative: 'Go negative',
+  stop: 'Stop'
 }
 
 const now = () => new Date().getTime() / 1000
@@ -32,7 +32,7 @@ if (!listening.value && typeof EventSource !== 'undefined') {
 
     // log message if requested
     if (messageBag.log) {
-      console.log(messageBag.log)
+      console.log(messageBag.log) // eslint-disable-line
     }
   }
 
@@ -41,7 +41,7 @@ if (!listening.value && typeof EventSource !== 'undefined') {
 
 // sync cue list with server-side
 const sync = async () => {
-  await $fetch( '/api/cue-list', {
+  await $fetch('/api/cue-list', {
     method: 'POST',
     body: {
       cueList: cueList.value
@@ -56,17 +56,20 @@ const createCue = (cue) => {
   cueList.value.push({
     id: nanoid(48),
     ...cueDefaults,
-    ...cue,
+    ...cue
   })
   sync()
 }
 
 // update a cue from the cue list
 const updateCue = (cue) => {
-  const cueKey = cue.id && cueList.value.findIndex(cueListItem => cueListItem.id === cue.id)
+  const cueKey =
+    cue.id &&
+    cueList.value.findIndex(cueListItem => cueListItem.id === cue.id)
 
   if (typeof cueKey === 'undefined' || cueKey < 0) {
-    console.warn('didn\'t find cue by key to update, so adding new cue')
+    /* eslint-disable no-console */
+    console.warn("didn't find cue by key to update, so adding new cue")
     createCue(cue)
   }
   cueList.value[cueKey] = {
@@ -100,67 +103,84 @@ const startCue = (id) => {
   // start cue
   updateCue({
     id,
-    startedAt,
+    startedAt
   })
 }
 
 // pause timer for current cue
-const pauseCue = id => updateCue({
-  id,
-  startedAt: 0,
-  durationRemaining: secondsRemaining.value
-})
+const pauseCue = id =>
+  updateCue({
+    id,
+    startedAt: 0,
+    durationRemaining: secondsRemaining.value
+  })
 
 // stop timer for current cue
-const stopCue = id => updateCue({
-  id,
-  startedAt: 0,
-  durationRemaining: null,
-})
+const stopCue = id =>
+  updateCue({
+    id,
+    startedAt: 0,
+    durationRemaining: null
+  })
 
 const secondsRemaining = ref(0)
 const currentCueId = ref(null)
 const isOverTime = ref(false)
 
-const changeSecondsRemaining = seconds => secondsRemaining.value = seconds
-const setCurrentCueId = id => currentCueId.value = id
-const setIsOverTime = overTime => isOverTime.value = overTime
-const toggleIsEditable = () => isEditable.value = !isEditable.value
+const changeSecondsRemaining = seconds => (secondsRemaining.value = seconds)
+const setCurrentCueId = id => (currentCueId.value = id)
+const setIsOverTime = overTime => (isOverTime.value = overTime)
+const toggleIsEditable = () => (isEditable.value = !isEditable.value)
 
 const getCuePercentage = (cue) => {
-  const remaining = cue.id === currentCueId.value && cue.startedAt ? secondsRemaining.value : cue.durationRemaining
-  const percentage = (cue.duration - remaining) / cue.duration * 100
-  // console.log(cue.description, { percentage, remaining, typeof: typeof remaining })
+  const remaining =
+    cue.id === currentCueId.value && cue.startedAt
+      ? secondsRemaining.value
+      : cue.durationRemaining
+  const percentage = ((cue.duration - remaining) / cue.duration) * 100
 
-  if (percentage > 100) return 100
-  if (!percentage || typeof remaining !== 'number') return 0
+  if (percentage > 100) { return 100 }
+  if (!percentage || typeof remaining !== 'number') { return 0 }
   return percentage
 }
 
 const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
 
-const getHours = (seconds = 0) => (parseInt(parseInt(seconds) / 3600))
-const getMinutes = (seconds = 0) => (parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60)
-const getSeconds = (seconds = 0) => (parseInt(seconds) - (parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60) * 60 - parseInt(parseInt(seconds) / 3600) * 3600)
+const getHours = (seconds = 0) => parseInt(parseInt(seconds) / 3600)
+const getMinutes = (seconds = 0) =>
+  parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60
+const getSeconds = (seconds = 0) =>
+  parseInt(seconds) -
+  (parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60) *
+  60 -
+  parseInt(parseInt(seconds) / 3600) * 3600
 
 const convertSecondsToTime = (value) => {
-  if (typeof value !== 'number') return `00:00`
+  if (typeof value !== 'number') { return '00:00' }
   const hours = parseInt(value / 3600)
   const minutes = parseInt(value / 60) - hours * 60
   const seconds = parseInt(value) - minutes * 60 - hours * 3600
-  let text = hours ? `${checkSingleDigit(hours)}:` : ''
+  const text = hours ? `${checkSingleDigit(hours)}:` : ''
   return `${text}${checkSingleDigit(minutes)}:${checkSingleDigit(seconds)}`
 }
 
-const changeHours = (x, y = 0, z = 0) => { cueList.value[x].duration = parseInt(cueList.value[x].duration) + ((parseInt(y) - parseInt(z)) * 3600) }
-const changeMinutes = (x, y = 0, z = 0) => { cueList.value[x].duration = parseInt(cueList.value[x].duration) + ((parseInt(y) - parseInt(z)) * 60) }
-const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseInt(cueList.value[x].duration) + parseInt(y) - parseInt(z) }
-
+const changeHours = (x, y = 0, z = 0) => {
+  cueList.value[x].duration =
+    parseInt(cueList.value[x].duration) + (parseInt(y) - parseInt(z)) * 3600
+}
+const changeMinutes = (x, y = 0, z = 0) => {
+  cueList.value[x].duration =
+    parseInt(cueList.value[x].duration) + (parseInt(y) - parseInt(z)) * 60
+}
+const changeSeconds = (x, y = 0, z = 0) => {
+  cueList.value[x].duration =
+    parseInt(cueList.value[x].duration) + parseInt(y) - parseInt(z)
+}
 </script>
 <template>
   <div class="min-h-screen w-screen bg-gray-900">
     <div class="pb-12 flex flex-col items-center">
-      <Clock
+      <timer-clock
         v-show="isClockVisible"
         @seconds-remaining="changeSecondsRemaining"
         @current-cue-id="setCurrentCueId"
@@ -175,9 +195,9 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
                   Description
                 </label>
                 <input
+                  id="description"
                   v-model="cueList[key].description"
                   class="appearance-none block w-full bg-gray-200 text-gray-700 border border-grey-200 rounded py-2 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
-                  id="description"
                   type="text"
                   placeholder="Cue name"
                 >
@@ -187,7 +207,9 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
                   Actions
                 </div>
                 <div class="relative">
-                  <button @click="deleteCue(cue.id)" class="btn rounded">Delete</button>
+                  <button class="btn rounded" @click="deleteCue(cue.id)">
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
@@ -198,22 +220,41 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
                 </label>
                 <input
                   :value="getHours(cue.duration)"
-                  @input="(e) => changeHours(key, e.target.value, getHours(cue.duration))"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                  type="number">
+                  type="number"
+                  @input="
+                    (e) =>
+                      changeHours(key, e.target.value, getHours(cue.duration))
+                  "
+                >
                 <span class="text-white"> : </span>
                 <input
                   :value="getMinutes(cue.duration)"
-                  @input="e => changeMinutes(key, e.target.value, getMinutes(cue.duration))"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                  type="number">
+                  type="number"
+                  @input="
+                    (e) =>
+                      changeMinutes(
+                        key,
+                        e.target.value,
+                        getMinutes(cue.duration)
+                      )
+                  "
+                >
                 <span class="text-white"> : </span>
                 <input
                   :value="getSeconds(cue.duration)"
-                  @input="e => changeSeconds(key, e.target.value, getSeconds(cue.duration))"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                  type="number">
-
+                  type="number"
+                  @input="
+                    (e) =>
+                      changeSeconds(
+                        key,
+                        e.target.value,
+                        getSeconds(cue.duration)
+                      )
+                  "
+                >
               </div>
               <div class="w-1/2 px-3 mb-2 md:mb-0">
                 <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-1" for="type">
@@ -221,24 +262,25 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
                 </label>
                 <div class="relative">
                   <select
+                    id="type"
                     v-model="cueList[key].type"
                     class="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                    id="type"
                   >
-                    <option v-for="(value, key) in cueTypeOptions" :key="key" :value="key">{{ value }}</option>
+                    <option v-for="(label, value) in cueTypeOptions" :key="value" :value="value">
+                      {{ label }}
+                    </option>
                   </select>
                   <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           <div class="py-3 w-full">
-            <button
-              @click="createCue"
-              class="btn"
-            >
+            <button class="btn" @click="createCue">
               Add a cue
             </button>
           </div>
@@ -252,58 +294,108 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
             'over-time': isOverTime,
           }"
         >
+          <div class="flex py-3 px-1">
+            <div class="w-[90px] pl-[10px] text-right">
+              Actions
+            </div>
+            <div class="grow">
+              Cue for
+            </div>
+            <div class="w-[115px] pl-[10px]">
+              When finished
+            </div>
+            <div class="w-[80px] pl-[10px] text-right">
+              Duration
+            </div>
+          </div>
           <div
             v-for="cue in cueList"
             :key="cue.id"
             class="flex py-3 px-1 cue"
             :class="{
-              'current': cue.id === currentCueId,
-              'active': cue.id === currentCueId && cue.startedAt,
+              current: cue.id === currentCueId,
+              active: cue.id === currentCueId && cue.startedAt,
             }"
             :style="{
-              '--background-width': `${ getCuePercentage(cue) }%`,
+              '--background-width': `${getCuePercentage(cue)}%`,
             }"
           >
-            <div class="flex grow space-x-4">
-              <div class="grow">{{ cue.description }}</div>
-              <div>{{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}</div>
-              <div>{{ convertSecondsToTime(cue.duration) }}</div>
-            </div>
-            <div>
+            <div class="w-[90px]">
               <template v-if="!cue.startedAt">
                 <button
                   v-if="!cue.durationRemaining"
-                  @click="startCue(cue.id)"
                   class="btn btn-green btn-icon btn-icon--fat rounded ml-10"
-                  :aria-label="`${cue.durationRemaining === 0 ? 'Restart' : 'Start'} ${cue.description}.`"
+                  :aria-label="`${cue.durationRemaining === 0 ? 'Restart' : 'Start'
+                  } ${cue.description}.`"
                   :title="cue.durationRemaining === 0 ? 'restart' : 'start'"
+                  @click="startCue(cue.id)"
                 >
                   <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M134.996 68.6548C145.864 74.2324 145.864 89.7676 134.996 95.3452L47.8488 140.069C37.8669 145.192 26 137.944 26 126.724L26 37.276C26 26.0563 37.8668 18.808 47.8488 23.9308L134.996 68.6548Z" stroke="currentColor" stroke-width="8"/>
+                    <path
+                      d="M134.996 68.6548C145.864 74.2324 145.864 89.7676 134.996 95.3452L47.8488 140.069C37.8669 145.192 26 137.944 26 126.724L26 37.276C26 26.0563 37.8668 18.808 47.8488 23.9308L134.996 68.6548Z"
+                      stroke="currentColor"
+                      stroke-width="8"
+                    />
                   </svg>
                 </button>
                 <template v-else>
                   <div class="inline-flex">
                     <button
-                      @click="stopCue(cue.id)"
                       class="btn btn-orange btn-icon btn-icon--fat rounded-l"
                       :aria-label="`Reset ${cue.description}.`"
                       title="reset"
+                      @click="stopCue(cue.id)"
                     >
-                      <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M60.6047 70.0799C52.7454 76.0834 52.7454 87.9166 60.6047 93.9201L118.394 138.064C128.266 145.605 142.5 138.566 142.5 126.144L142.5 37.8556C142.5 25.4339 128.266 18.3951 118.394 25.9355L60.6047 70.0799Z" stroke="currentColor" stroke-width="8"/>
-                        <rect x="24" y="22" width="30" height="120" rx="15" stroke="currentColor" stroke-width="8"/>
+                      <svg
+                        width="164"
+                        height="164"
+                        viewBox="0 0 164 164"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M60.6047 70.0799C52.7454 76.0834 52.7454 87.9166 60.6047 93.9201L118.394 138.064C128.266 145.605 142.5 138.566 142.5 126.144L142.5 37.8556C142.5 25.4339 128.266 18.3951 118.394 25.9355L60.6047 70.0799Z"
+                          stroke="currentColor"
+                          stroke-width="8"
+                        />
+                        <rect
+                          x="24"
+                          y="22"
+                          width="30"
+                          height="120"
+                          rx="15"
+                          stroke="currentColor"
+                          stroke-width="8"
+                        />
                       </svg>
                     </button>
                     <button
-                      @click="startCue(cue.id)"
                       class="btn btn-green btn-icon btn-icon--fat rounded-r"
                       :aria-label="`Resume ${cue.description}.`"
                       title="resume"
+                      @click="startCue(cue.id)"
                     >
-                      <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M147.395 70.0799C155.255 76.0834 155.255 87.9166 147.395 93.9201L89.6055 138.064C79.7343 145.605 65.5 138.566 65.5 126.144L65.5 37.8556C65.5 25.4339 79.7343 18.3951 89.6055 25.9355L147.395 70.0799Z" stroke="currentColor" stroke-width="8"/>
-                        <rect x="13" y="22" width="30" height="120" rx="15" stroke="currentColor" stroke-width="8"/>
+                      <svg
+                        width="164"
+                        height="164"
+                        viewBox="0 0 164 164"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M147.395 70.0799C155.255 76.0834 155.255 87.9166 147.395 93.9201L89.6055 138.064C79.7343 145.605 65.5 138.566 65.5 126.144L65.5 37.8556C65.5 25.4339 79.7343 18.3951 89.6055 25.9355L147.395 70.0799Z"
+                          stroke="currentColor"
+                          stroke-width="8"
+                        />
+                        <rect
+                          x="13"
+                          y="22"
+                          width="30"
+                          height="120"
+                          rx="15"
+                          stroke="currentColor"
+                          stroke-width="8"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -311,29 +403,62 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
               </template>
               <template v-else>
                 <div class="inline-flex">
-                  <button 
-                    @click="stopCue(cue.id)"
+                  <button
                     class="btn btn-orange btn-icon btn-icon--fat rounded-l"
                     :aria-label="`Stop ${cue.description}.`"
                     title="stop"
+                    @click="stopCue(cue.id)"
                   >
                     <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="27" y="27" width="110" height="110" rx="15" stroke="currentColor" stroke-width="8"/>
+                      <rect
+                        x="27"
+                        y="27"
+                        width="110"
+                        height="110"
+                        rx="15"
+                        stroke="currentColor"
+                        stroke-width="8"
+                      />
                     </svg>
                   </button>
                   <button
-                    @click="pauseCue(cue.id)"
                     class="btn btn-orange btn-icon btn-icon--fat rounded-r"
                     :aria-label="`Pause ${cue.description}.`"
                     title="pause"
+                    @click="pauseCue(cue.id)"
                   >
                     <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="96" y="17" width="45" height="130" rx="15" stroke="currentColor" stroke-width="8"/>
-                      <rect x="24" y="17" width="43.3333" height="130" rx="15" stroke="currentColor" stroke-width="8"/>
+                      <rect
+                        x="96"
+                        y="17"
+                        width="45"
+                        height="130"
+                        rx="15"
+                        stroke="currentColor"
+                        stroke-width="8"
+                      />
+                      <rect
+                        x="24"
+                        y="17"
+                        width="43.3333"
+                        height="130"
+                        rx="15"
+                        stroke="currentColor"
+                        stroke-width="8"
+                      />
                     </svg>
                   </button>
                 </div>
               </template>
+            </div>
+            <div class="grow">
+              {{ cue.description }}
+            </div>
+            <div class="w-[115px] pl-[10px]">
+              {{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}
+            </div>
+            <div class="w-[80px] text-right">
+              {{ convertSecondsToTime(cue.duration) }}
             </div>
           </div>
         </div>
@@ -342,29 +467,89 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
     <div class="bg-gray-900">
       <button
         v-if="isEditable"
-        @click="() => {toggleIsEditable(); sync()}"
         class="btn btn-icon btn-icon--lg w-[100%] rounded-t text-center"
         aria-label="Save cue list and go back."
         title="save and go back"
+        @click="
+          () => {
+            toggleIsEditable();
+            sync();
+          }
+        "
       >
         Done editing
-        <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg" class="-mt-2">
-          <rect x="44" y="51" width="87" height="87" rx="15" stroke="currentColor" stroke-width="8"/>
-          <rect x="58.7798" y="71.306" width="8" height="48" rx="4" transform="rotate(-32.7755 58.7798 71.306)" fill="currentColor" stroke="currentColor" stroke-width="8"/>
-          <rect x="142.536" y="33.1998" width="8" height="96" rx="4" transform="rotate(39.4617 142.536 33.1998)" fill="currentColor" stroke="currentColor" stroke-width="8"/>
+        <svg
+          width="164"
+          height="164"
+          viewBox="0 0 164 164"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          class="-mt-2"
+        >
+          <rect
+            x="44"
+            y="51"
+            width="87"
+            height="87"
+            rx="15"
+            stroke="currentColor"
+            stroke-width="8"
+          />
+          <rect
+            x="58.7798"
+            y="71.306"
+            width="8"
+            height="48"
+            rx="4"
+            transform="rotate(-32.7755 58.7798 71.306)"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="8"
+          />
+          <rect
+            x="142.536"
+            y="33.1998"
+            width="8"
+            height="96"
+            rx="4"
+            transform="rotate(39.4617 142.536 33.1998)"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="8"
+          />
         </svg>
       </button>
       <button
         v-else
-        @click="toggleIsEditable"
         class="btn btn-icon btn-icon--lg w-[100%] rounded-t text-center"
         aria-label="Edit the cue list."
         title="edit cue list"
+        @click="toggleIsEditable"
       >
         Edit
-        <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg" class="-mt-2">
-          <rect x="26" y="51" width="110" height="87" rx="15" stroke="currentColor" stroke-width="8"/>
-          <path d="M121.137 23.5736C122.129 21.5999 124.534 20.8046 126.508 21.7971V21.7971C128.481 22.7897 129.277 25.1942 128.284 27.1678L89.6455 103.999L86.0719 102.202C84.0983 101.21 83.303 98.805 84.2955 96.8314L121.137 23.5736Z" fill="currentColor" stroke="currentColor" stroke-width="8"/>
+        <svg
+          width="164"
+          height="164"
+          viewBox="0 0 164 164"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          class="-mt-2"
+        >
+          <rect
+            x="26"
+            y="51"
+            width="110"
+            height="87"
+            rx="15"
+            stroke="currentColor"
+            stroke-width="8"
+          />
+          <path
+            d="M121.137 23.5736C122.129 21.5999 124.534 20.8046 126.508 21.7971V21.7971C128.481 22.7897 129.277 25.1942 128.284 27.1678L89.6455 103.999L86.0719 102.202C84.0983 101.21 83.303 98.805 84.2955 96.8314L121.137 23.5736Z"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="8"
+          />
         </svg>
       </button>
     </div>
@@ -391,8 +576,9 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
       line-height: 1;
     }
   }
+
   &-icon--fat {
-    svg > * {
+    svg>* {
       stroke-width: 16;
     }
   }
@@ -403,7 +589,7 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
   }
 
   &-gray {
-    @apply bg-gray-300 hover:bg-gray-400 text-gray-800;
+    @apply bg-gray-300 text-gray-800;
 
     &:hover {
       @apply bg-gray-400;
@@ -411,7 +597,7 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
   }
 
   &-action {
-    @apply rounded-full w-24
+    @apply rounded-full w-24;
   }
 
   &-green {
@@ -430,23 +616,24 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
     }
   }
 }
+
 .cue {
   position: relative;
   z-index: 1;
 
   &:before {
-    content: '';
+    content: "";
     position: absolute;
     z-index: -1;
     left: 0;
     top: 0;
     height: 100%;
     width: var(--background-width);
-    @apply bg-gray-800
+    @apply bg-gray-800;
   }
 
   &.current:before {
-    @apply bg-gray-600
+    @apply bg-gray-600;
   }
 
   &.active:before {
@@ -456,25 +643,36 @@ const changeSeconds = (x, y = 0, z = 0) => { cueList.value[x].duration = parseIn
     transition: width 1s linear 0s;
   }
 
-      // 'text-red-500': timer.overTime,
-      // 'text-gray-800': !cue,
+  // 'text-red-500': timer.overTime,
+  // 'text-gray-800': !cue,
   // &.blink:before {
-	// 	animation: blinkingBackground 1s infinite;
-	// }
+  //  animation: blinkingBackground 1s infinite;
+  // }
 }
+
 .cue-list.over-time .cue.active:before {
   animation: blinkingBackground 1s infinite;
 }
-@keyframes blinkingBackground{
-  // 0%		{ background-color: #10c018;}
-  // 25%		{ background-color: #1056c0;}
-  // 50%		{ background-color: #ef0a1a;}
-  // 75%		{ background-color: #254878;}
-  // 100%	{ background-color: #04a1d5;}
-  0%    { @apply bg-gray-600 }
-  // 20%   { @apply bg-gray-600 }
-  50%   { @apply bg-red-500 }
-  // 80%   { @apply bg-gray-600 }
-  100%  { @apply bg-gray-600 }
+
+@keyframes blinkingBackground {
+
+  // 0% { background-color: #10c018;}
+  // 25% { background-color: #1056c0;}
+  // 50% { background-color: #ef0a1a;}
+  // 75% { background-color: #254878;}
+  // 100% { background-color: #04a1d5;}
+  0% {
+    @apply bg-gray-600;
+  }
+
+  // 20% { @apply bg-gray-600 }
+  50% {
+    @apply bg-red-500;
+  }
+
+  // 80% { @apply bg-gray-600 }
+  100% {
+    @apply bg-gray-600;
+  }
 }
 </style>

@@ -9,12 +9,12 @@ const enterFullscreen = () => {
   element.requestFullscreen
     ? element.requestFullscreen()
     : element.msRequestFullscreen
-    ? element.msRequestFullscreen()
-    : element.mozRequestFullScreen
-    ? element.mozRequestFullScreen()
-    : element.webkitRequestFullscreen
-    ? element.webkitRequestFullscreen()
-    : (fullscreen.value = false)
+      ? element.msRequestFullscreen()
+      : element.mozRequestFullScreen
+        ? element.mozRequestFullScreen()
+        : element.webkitRequestFullscreen
+          ? element.webkitRequestFullscreen()
+          : (fullscreen.value = false)
 }
 
 const exitFullscreen = () => {
@@ -30,6 +30,6 @@ const toggleFullscreen = () => fullscreen.value ? exitFullscreen() : enterFullsc
     class="h-screen w-screen bg-gray-900 text-white p-2"
     @click="toggleFullscreen"
   >
-    <Clock />
+    <timer-clock />
   </div>
 </template>
