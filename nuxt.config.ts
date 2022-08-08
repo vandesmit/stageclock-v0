@@ -17,7 +17,7 @@ export default defineNuxtConfig({
         { name: 'msapplication-TileColor', content: '#da532c' },
         { name: 'theme-color', content: '#1e293b' },
       ],
-      viewport: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no',
+      viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
       title: 'Stage Clock',
     },
   },
