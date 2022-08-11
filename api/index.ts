@@ -1,4 +1,4 @@
-/* eslint-disable-file no-console */
+/* eslint-disable no-console */
 import fs from 'fs'
 import express from 'express'
 import cors from 'cors'
@@ -36,17 +36,17 @@ const defaultDatabase = {
 }
 
 const readDatabase = ({
-  onSuccess = data => isLogging && console.log(data), // eslint-disable-line
-  onError = console.error // eslint-disable-line
+  onSuccess = data => isLogging && console.log(data),
+  onError = console.error
 }) => {
   if (redis) {
     redis.get('database', (err, result) => {
       if (err || !result) {
         onError(err)
-        if (isLogging) { console.log('reading DB Error: ', { err, result }) } // eslint-disable-line
+        if (isLogging) { console.log('reading DB Error: ', { err, result }) }
       } else {
         onSuccess(JSON.parse(result))
-        if (isLogging) { console.log('reading DB: ', JSON.parse(result)) } // eslint-disable-line
+        if (isLogging) { console.log('reading DB: ', JSON.parse(result)) }
       }
     })
   } else {
@@ -58,7 +58,7 @@ const readDatabase = ({
 
       fs.readFile(jsonPath, 'utf8', (err, data) => {
         if (err) {
-          if (isLogging) { console.error(err) } // eslint-disable-line
+          if (isLogging) { console.error(err) }
           onError(err)
           return
         }
@@ -72,7 +72,7 @@ const writeDatabase = (data) => {
   if (redis) {
     redis.set('database', JSON.stringify(data)/*, console.log */)
   } else {
-    fs.writeFile(jsonPath, JSON.stringify(data, null, 2), { flag: 'w+' }, console.error) // eslint-disable-line
+    fs.writeFile(jsonPath, JSON.stringify(data, null, 2), { flag: 'w+' }, console.error)
   }
 }
 
@@ -123,7 +123,7 @@ app.get('/sync', (req, res) => {
   })
 })
 
-app.post('/cue-list', (req, res, next) => {
+app.post('/sync', (req, res, next) => {
   const newInfo = req.body
 
   log.push(newInfo)
