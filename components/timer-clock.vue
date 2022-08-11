@@ -5,14 +5,18 @@ const cue = useCue()
 const {
   current: currentCue = {},
   lastActiveId: lastActiveCueId,
-  hasLongCues
+  hasLongCues,
+  sync
 } = cue
 const clock = useClock()
 const timer = useTimer({ cue })
 
 watch(currentCue, (value) => {
   emit('currentCueId', value && value.id)
-  if (value) { lastActiveCueId.value = value.id }
+  if (value && lastActiveCueId.value !== value.id) {
+    lastActiveCueId.value = value.id
+    sync()
+  }
 })
 
 // update clock & timer

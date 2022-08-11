@@ -20,6 +20,11 @@ export const useCue = () => {
     events.onmessage = ({ data }): void => {
       const messageBag = JSON.parse(data)
 
+      // set last active cue-id
+      if (messageBag.lastActiveId && lastActiveId) {
+        lastActiveId.value = messageBag.lastActiveId
+      }
+
       // set new cue list
       if (messageBag.cueList && list) {
         list.value = messageBag.cueList
@@ -58,10 +63,11 @@ export const useCue = () => {
 
   const list = ref(<cue[]>[])
   const sync = () => {
-    $fetch('/api/cue-list', {
+    $fetch('/api/sync', {
       method: 'POST',
       body: {
-        cueList: list.value
+        cueList: list.value,
+        lastActiveId: lastActiveId.value
       }
     })
   }
