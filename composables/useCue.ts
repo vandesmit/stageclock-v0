@@ -120,7 +120,7 @@ export const useCue = () => {
     timer.overTime = false
     const currentKey = list.value.findIndex(({ id }: cue) => id === current.value.id)
     if (currentKey < 0) {
-      console.error('current cue not found when trying to start next cue')
+      console.error('current cue not found when trying to start next cue') // eslint-disable-line no-console
       return
     }
     const nextKey = currentKey + 1
