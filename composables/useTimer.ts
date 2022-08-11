@@ -1,14 +1,15 @@
 // eslint-disable no-console
-export const useTimer = ({ currentCue }) => {
-  const { transformToPositiveDoubleDigit } = useTransformers()
-  const { now } = useTime()
+export const useTimer = ({ cue }) => {
+  const { doubleDigit } = useTransform()
+  const time = useTime()
 
   const _calculatedRemaining = ref(0)
 
   const {
+    current: currentCue,
     startNext: startNextCue,
     update: updateCue
-  } = useCue()
+  } = cue
 
   const update = () => {
     if (!currentCue.value) {
@@ -26,7 +27,7 @@ export const useTimer = ({ currentCue }) => {
 
     // calculate remaining time in seconds
     if (startedAt) {
-      _calculatedRemaining.value = startedAt + _calculatedRemaining.value - Math.floor(now())
+      _calculatedRemaining.value = startedAt + _calculatedRemaining.value - Math.floor(time.now())
     }
 
     // check if remaining time changed
@@ -63,14 +64,14 @@ export const useTimer = ({ currentCue }) => {
       timer.overTime = false
     }
 
-    const hours = Math.floor(timer.remaining / 3600)
-    const minutes = Math.floor(timer.remaining / 60) - hours * 60
-    const seconds = Math.floor(timer.remaining) - minutes * 60 - hours * 3600
+    const hours = Math.floor(Math.abs(timer.remaining) / 3600)
+    const minutes = Math.floor(Math.abs(timer.remaining) / 60) - hours * 60
+    const seconds = Math.floor(Math.abs(timer.remaining)) - minutes * 60 - hours * 3600
 
     // set times
-    timer.hours = transformToPositiveDoubleDigit(hours)
-    timer.minutes = transformToPositiveDoubleDigit(minutes)
-    timer.seconds = transformToPositiveDoubleDigit(seconds)
+    timer.hours = doubleDigit(hours)
+    timer.minutes = doubleDigit(minutes)
+    timer.seconds = doubleDigit(seconds)
   }
 
   const timer = reactive({

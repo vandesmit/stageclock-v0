@@ -1,127 +1,23 @@
 <script setup>
-import { nanoid } from 'nanoid'
-
-const listening = ref(0)
 const isEditable = ref(false)
 const isClockVisible = ref(true)
-const cueDefaults = {
-  description: 'cue item',
-  duration: 0,
-  type: 'negative'
-}
+
 const cueTypeOptions = {
   continue: 'Auto continue',
   negative: 'Go negative',
   stop: 'Stop'
 }
 
-const now = () => new Date().getTime() / 1000
-
-// Start listening for new events
-if (!listening.value && typeof EventSource !== 'undefined') {
-  const events = new EventSource('/api/sync')
-
-  // set callback for events
-  events.onmessage = ({ data }) => {
-    const messageBag = JSON.parse(data)
-
-    // set new cue list
-    if (messageBag.cueList) {
-      cueList.value = messageBag.cueList
-    }
-
-    // log message if requested
-    if (messageBag.log) {
-      console.log(messageBag.log) // eslint-disable-line
-    }
-  }
-
-  listening.value = true
-}
-
-// sync cue list with server-side
-const sync = async () => {
-  await $fetch('/api/cue-list', {
-    method: 'POST',
-    body: {
-      cueList: cueList.value
-    }
-  })
-}
-
-const cueList = ref([])
-
-// Add a cue to the cue list
-const createCue = (cue) => {
-  cueList.value.push({
-    id: nanoid(48),
-    ...cueDefaults,
-    ...cue
-  })
-  sync()
-}
-
-// update a cue from the cue list
-const updateCue = (cue) => {
-  const cueKey =
-    cue.id &&
-    cueList.value.findIndex(cueListItem => cueListItem.id === cue.id)
-
-  if (typeof cueKey === 'undefined' || cueKey < 0) {
-    /* eslint-disable no-console */
-    console.warn("didn't find cue by key to update, so adding new cue")
-    createCue(cue)
-  }
-  cueList.value[cueKey] = {
-    ...cueList.value[cueKey],
-    ...cue
-  }
-
-  sync()
-}
-
-// delete a cue from the cue list
-const deleteCue = (id) => {
-  if (confirm('Are you sure you want to delete a cue?')) {
-    cueList.value = cueList.value.filter(cue => cue.id !== id)
-  }
-}
-
-// start timer with new cue
-const startCue = (id) => {
-  // get start time
-  const startedAt = now()
-
-  // Pause all cues (fallback mechanism)
-  cueList.value.forEach((value, key) => {
-    if (value.startedAt) {
-      cueList.value[key].startedAt = null
-      cueList.value[key].durationRemaining = secondsRemaining.value
-    }
-  })
-
-  // start cue
-  updateCue({
-    id,
-    startedAt
-  })
-}
-
-// pause timer for current cue
-const pauseCue = id =>
-  updateCue({
-    id,
-    startedAt: 0,
-    durationRemaining: secondsRemaining.value
-  })
-
-// stop timer for current cue
-const stopCue = id =>
-  updateCue({
-    id,
-    startedAt: 0,
-    durationRemaining: null
-  })
+const {
+  create: createCue,
+  delete: deleteCue,
+  stop: stopCue,
+  pause: pauseCue,
+  start: startCue,
+  list: cueList,
+  sync
+} = useCue()
+const { readableTime } = useTransform()
 
 const secondsRemaining = ref(0)
 const currentCueId = ref(null)
@@ -132,49 +28,31 @@ const setCurrentCueId = id => (currentCueId.value = id)
 const setIsOverTime = overTime => (isOverTime.value = overTime)
 const toggleIsEditable = () => (isEditable.value = !isEditable.value)
 
-const getCuePercentage = (cue) => {
-  const remaining =
-    cue.id === currentCueId.value && cue.startedAt
-      ? secondsRemaining.value
-      : cue.durationRemaining
-  const percentage = ((cue.duration - remaining) / cue.duration) * 100
+const getCuePercentage = ({ id, startedAt, duration, durationRemaining }) => {
+  const remaining = id === currentCueId.value && startedAt ? secondsRemaining.value : durationRemaining
+  const percentage = ((duration - remaining) / duration) * 100
 
-  if (percentage > 100) { return 100 }
-  if (!percentage || typeof remaining !== 'number') { return 0 }
+  if (percentage > 100) {
+    return 100
+  }
+  if (!percentage || typeof remaining !== 'number') {
+    return 0
+  }
   return percentage
 }
 
-const checkSingleDigit = digit => ('0' + Math.abs(digit)).slice(-2)
+const getHours = (seconds = 0) => Math.floor(seconds / 3600)
+const getMinutes = (seconds = 0) => Math.floor(seconds / 60) - getHours(seconds) * 60
+const getSeconds = (seconds = 0) => seconds - getMinutes(seconds) * 60 - getHours(seconds) * 3600
 
-const getHours = (seconds = 0) => parseInt(parseInt(seconds) / 3600)
-const getMinutes = (seconds = 0) =>
-  parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60
-const getSeconds = (seconds = 0) =>
-  parseInt(seconds) -
-  (parseInt(parseInt(seconds) / 60) - parseInt(parseInt(seconds) / 3600) * 60) *
-  60 -
-  parseInt(parseInt(seconds) / 3600) * 3600
-
-const convertSecondsToTime = (value) => {
-  if (typeof value !== 'number') { return '00:00' }
-  const hours = parseInt(value / 3600)
-  const minutes = parseInt(value / 60) - hours * 60
-  const seconds = parseInt(value) - minutes * 60 - hours * 3600
-  const text = hours ? `${checkSingleDigit(hours)}:` : ''
-  return `${text}${checkSingleDigit(minutes)}:${checkSingleDigit(seconds)}`
+const changeHours = (x, newValue = 0, oldValue = 0) => {
+  cueList.value[x].duration = (cueList.value[x].duration || 0) + (parseInt(newValue) - oldValue) * 3600
 }
-
-const changeHours = (x, y = 0, z = 0) => {
-  cueList.value[x].duration =
-    parseInt(cueList.value[x].duration) + (parseInt(y) - parseInt(z)) * 3600
+const changeMinutes = (x, newValue = 0, oldValue = 0) => {
+  cueList.value[x].duration = (cueList.value[x].duration || 0) + (parseInt(newValue) - oldValue) * 60
 }
-const changeMinutes = (x, y = 0, z = 0) => {
-  cueList.value[x].duration =
-    parseInt(cueList.value[x].duration) + (parseInt(y) - parseInt(z)) * 60
-}
-const changeSeconds = (x, y = 0, z = 0) => {
-  cueList.value[x].duration =
-    parseInt(cueList.value[x].duration) + parseInt(y) - parseInt(z)
+const changeSeconds = (x, newValue = '0', oldValue = 0) => {
+  cueList.value[x].duration = (cueList.value[x].duration || 0) + parseInt(newValue) - oldValue
 }
 </script>
 <template>
@@ -188,7 +66,7 @@ const changeSeconds = (x, y = 0, z = 0) => {
       />
       <template v-if="isEditable">
         <div class="cue-list divide-y divide-slate-700 mt-8 w-full max-w-sm">
-          <div v-for="(cue, key) in cueList" :key="`edit-${cue.id}`" class="py-3 w-full">
+          <div v-for="({ id, duration }, key) in cueList" :key="`edit-${id}`" class="py-3 w-full">
             <div class="flex flex-wrap -mx-3 mb-0">
               <div class="w-2/3 px-3">
                 <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-1" for="description">
@@ -207,7 +85,7 @@ const changeSeconds = (x, y = 0, z = 0) => {
                   Actions
                 </div>
                 <div class="relative">
-                  <button class="btn rounded" @click="deleteCue(cue.id)">
+                  <button class="btn rounded" @click="deleteCue(id)">
                     Delete
                   </button>
                 </div>
@@ -219,17 +97,17 @@ const changeSeconds = (x, y = 0, z = 0) => {
                   Duration
                 </label>
                 <input
-                  :value="getHours(cue.duration)"
+                  :value="getHours(duration)"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                   type="number"
                   @input="
                     (e) =>
-                      changeHours(key, e.target.value, getHours(cue.duration))
+                      changeHours(key, e.target.value, getHours(duration))
                   "
                 >
                 <span class="text-white"> : </span>
                 <input
-                  :value="getMinutes(cue.duration)"
+                  :value="getMinutes(duration)"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                   type="number"
                   @input="
@@ -237,13 +115,13 @@ const changeSeconds = (x, y = 0, z = 0) => {
                       changeMinutes(
                         key,
                         e.target.value,
-                        getMinutes(cue.duration)
+                        getMinutes(duration)
                       )
                   "
                 >
                 <span class="text-white"> : </span>
                 <input
-                  :value="getSeconds(cue.duration)"
+                  :value="getSeconds(duration)"
                   class="w-12 text-right appearance-none bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-0 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                   type="number"
                   @input="
@@ -251,7 +129,7 @@ const changeSeconds = (x, y = 0, z = 0) => {
                       changeSeconds(
                         key,
                         e.target.value,
-                        getSeconds(cue.duration)
+                        getSeconds(duration)
                       )
                   "
                 >
@@ -309,26 +187,26 @@ const changeSeconds = (x, y = 0, z = 0) => {
             </div>
           </div>
           <div
-            v-for="cue in cueList"
-            :key="cue.id"
+            v-for="c in cueList"
+            :key="c.id"
             class="flex py-3 px-1 cue"
             :class="{
-              current: cue.id === currentCueId,
-              active: cue.id === currentCueId && cue.startedAt,
+              current: c.id === currentCueId,
+              active: c.id === currentCueId && c.startedAt,
             }"
             :style="{
-              '--background-width': `${getCuePercentage(cue)}%`,
+              '--background-width': `${getCuePercentage(c)}%`,
             }"
           >
             <div class="w-[90px]">
-              <template v-if="!cue.startedAt">
+              <template v-if="!c.startedAt">
                 <button
-                  v-if="!cue.durationRemaining"
+                  v-if="!c.durationRemaining"
                   class="btn btn-green btn-icon btn-icon--fat rounded ml-10"
-                  :aria-label="`${cue.durationRemaining === 0 ? 'Restart' : 'Start'
-                  } ${cue.description}.`"
-                  :title="cue.durationRemaining === 0 ? 'restart' : 'start'"
-                  @click="startCue(cue.id)"
+                  :aria-label="`${c.durationRemaining === 0 ? 'Restart' : 'Start'
+                  } ${c.description}.`"
+                  :title="c.durationRemaining === 0 ? 'restart' : 'start'"
+                  @click="startCue(c.id, secondsRemaining)"
                 >
                   <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -342,9 +220,9 @@ const changeSeconds = (x, y = 0, z = 0) => {
                   <div class="inline-flex">
                     <button
                       class="btn btn-orange btn-icon btn-icon--fat rounded-l"
-                      :aria-label="`Reset ${cue.description}.`"
+                      :aria-label="`Reset ${c.description}.`"
                       title="reset"
-                      @click="stopCue(cue.id)"
+                      @click="stopCue(c.id)"
                     >
                       <svg
                         width="164"
@@ -371,9 +249,9 @@ const changeSeconds = (x, y = 0, z = 0) => {
                     </button>
                     <button
                       class="btn btn-green btn-icon btn-icon--fat rounded-r"
-                      :aria-label="`Resume ${cue.description}.`"
+                      :aria-label="`Resume ${c.description}.`"
                       title="resume"
-                      @click="startCue(cue.id)"
+                      @click="startCue(c.id, secondsRemaining)"
                     >
                       <svg
                         width="164"
@@ -405,9 +283,9 @@ const changeSeconds = (x, y = 0, z = 0) => {
                 <div class="inline-flex">
                   <button
                     class="btn btn-orange btn-icon btn-icon--fat rounded-l"
-                    :aria-label="`Stop ${cue.description}.`"
+                    :aria-label="`Stop ${c.description}.`"
                     title="stop"
-                    @click="stopCue(cue.id)"
+                    @click="stopCue(c.id)"
                   >
                     <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect
@@ -423,9 +301,9 @@ const changeSeconds = (x, y = 0, z = 0) => {
                   </button>
                   <button
                     class="btn btn-orange btn-icon btn-icon--fat rounded-r"
-                    :aria-label="`Pause ${cue.description}.`"
+                    :aria-label="`Pause ${c.description}.`"
                     title="pause"
-                    @click="pauseCue(cue.id)"
+                    @click="pauseCue(c.id, secondsRemaining)"
                   >
                     <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect
@@ -452,13 +330,13 @@ const changeSeconds = (x, y = 0, z = 0) => {
               </template>
             </div>
             <div class="grow">
-              {{ cue.description }}
+              {{ c.description }}
             </div>
             <div class="w-[115px] pl-[10px]">
-              {{ cueTypeOptions[cue.type] && cueTypeOptions[cue.type] }}
+              {{ cueTypeOptions[c.type] && cueTypeOptions[c.type] }}
             </div>
             <div class="w-[80px] text-right">
-              {{ convertSecondsToTime(cue.duration) }}
+              {{ readableTime(c.duration) }}
             </div>
           </div>
         </div>

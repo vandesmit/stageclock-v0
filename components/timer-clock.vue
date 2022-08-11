@@ -1,16 +1,14 @@
 <script setup>
 const emit = defineEmits(['secondsRemaining', 'currentCueId', 'isOverTime'])
 
+const cue = useCue()
 const {
-  list: cueList,
   current: currentCue = {},
   lastActiveId: lastActiveCueId,
   hasLongCues
-} = useCue()
+} = cue
 const clock = useClock()
-const timer = useTimer({ currentCue })
-
-useListener({ cueList })
+const timer = useTimer({ cue })
 
 watch(currentCue, (value) => {
   emit('currentCueId', value && value.id)
