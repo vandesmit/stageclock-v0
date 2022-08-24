@@ -1,9 +1,10 @@
-<script setup>
+<script setup lang="ts">
 const emit = defineEmits(['secondsRemaining', 'currentCueId', 'isOverTime'])
 
 const cue = useCue()
 const {
-  current: currentCue = {},
+  current: currentCue,
+  // current: currentCue = {},
   lastActiveId: lastActiveCueId,
   hasLongCues,
   sync
@@ -29,25 +30,35 @@ setInterval(() => {
 }, 100)
 </script>
 <template>
-  <div class="flex h-[100%] w-[100%] flex-col justify-between bg-gray-900 text-white">
+  <div class="flex flex-col justify-between bg-gray-800 text-white py-[20px] px-[24px] rounded-md">
     <div
       v-if="timer"
-      class="font-mono text-[20vw] leading-none text-center"
+      class="font-mono text-xxl text-center"
       :class="{
         'text-red-500': timer.overTime,
-        'text-gray-800': !currentCue,
+        'text-gray-400': !currentCue,
       }"
     >
-      <span v-show="hasLongCues">{{ timer.hours }}:</span>{{ timer.minutes }}:{{ timer.seconds }}
+      <div v-show="hasLongCues" class="inline">
+        {{ timer.hours }}
+        <span>:</span>
+      </div>
+      {{ timer.minutes }}
+      <span>:</span>
+      {{ timer.seconds }}
     </div>
-    <div class="text-[5vw] leading-none text-center mt-2">
+    <div class="text-xl text-center mt-[20px]">
       {{ currentCue && currentCue.description || '-' }}
     </div>
     <div
       v-if="!clock.isHidden"
-      class="font-mono text-[10vw] leading-none text-right text-gray-600 mt-2"
+      class="font-mono text-lg text-right text-gray-400 mt-[20px]"
     >
-      {{ clock.hours }}:{{ clock.minutes }}:{{ clock.seconds }}
+      {{ clock.hours }}
+      <span>:</span>
+      {{ clock.minutes }}
+      <span>:</span>
+      {{ clock.seconds }}
     </div>
   </div>
 </template>
