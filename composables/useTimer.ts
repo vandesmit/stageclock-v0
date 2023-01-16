@@ -1,4 +1,9 @@
 export const useTimer = (database: Database) => {
+  const logger = console.log // eslint-disable-line no-console
+  if (!database) {
+    logger('cannot use timer without database data')
+  }
+
   const { doubleDigit } = useTransform()
   const time = useTime()
 

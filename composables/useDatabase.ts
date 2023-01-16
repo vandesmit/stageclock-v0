@@ -70,6 +70,10 @@ export const useDatabase = (): Database => {
   const hasLongCues = computed(() => !!list.value.find(c => c.duration >= 3600))
 
   const updateCue: Database['updateCue'] = (newValues) => {
+    if (!newValues) {
+      logger('cannot update cue without new values')
+      return
+    }
     const cueKey = newValues.id && list.value.findIndex(c => c.id === newValues.id)
     if (typeof cueKey === 'undefined' || cueKey < 0) {
       return
@@ -83,6 +87,10 @@ export const useDatabase = (): Database => {
   }
 
   const startCue: Database['startCue'] = (id, remaining) => {
+    if (typeof remaining === 'undefined') {
+      logger('cannot start cue without remaining value of previous cue')
+      return
+    }
     const startedAt = time.now()
 
     // Pause all cues (fallback mechanism)
@@ -112,6 +120,10 @@ export const useDatabase = (): Database => {
   })
 
   const startNextCue: Database['startNextCue'] = (timer) => {
+    if (!timer) {
+      logger('cannot start next cue without timer info')
+      return
+    }
     timer.remaining = 0
     timer.overTime = false
     const currentKey = list.value.findIndex(c => c.id === currentCue.value.id)
