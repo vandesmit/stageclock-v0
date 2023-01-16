@@ -1,16 +1,16 @@
 <script setup lang="ts">
 const emit = defineEmits(['secondsRemaining', 'currentCueId', 'isOverTime'])
 
-const cue = useCue()
+const database = useDatabase()
 const {
-  current: currentCue,
+  currentCue,
   // current: currentCue = {},
   lastActiveId: lastActiveCueId,
   hasLongCues,
   sync
-} = cue
+} = database
 const clock = useClock()
-const timer = useTimer({ cue })
+const timer = useTimer(database)
 
 watch(currentCue, (value) => {
   emit('currentCueId', value && value.id)

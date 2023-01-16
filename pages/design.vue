@@ -1,14 +1,14 @@
 <script setup lang="ts">
 // https://www.figma.com/file/lyQeWSxuePTZHPwXhNl6J0/Stage-Clock?node-id=0%3A1
-const {
-  list: cueList
-} = useCue()
+// const {
+//   cueList
+// } = useDatabase()
 </script>
 <template>
   <div>
     <timer-clock />
     <timer-actions class="mt-[20px]" />
-    <cue-list class="mt-[10px]" :list="cueList" />
+    <cue-list class="mt-[10px]" />
     <cue-form class="mt-[20px]" />
     <div class="text-gray-100 mt-[30px]">
       <h2 class="text-md">

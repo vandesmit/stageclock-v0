@@ -23,6 +23,27 @@ export default defineNuxtConfig({
     }
   },
   modules: ['@nuxtjs/tailwindcss'],
+  runtimeConfig: {
+    public: {
+      cueTypeOptions: <Label[]>[
+        {
+          key: 'continue',
+          label: 'Auto continue',
+          icon: 'continue'
+        },
+        {
+          key: 'negative',
+          label: 'Go negative',
+          icon: 'negative'
+        },
+        {
+          key: 'stop',
+          label: 'Stop',
+          icon: 'stop2'
+        }
+      ]
+    }
+  },
   serverMiddleware: [
     { path: '/api', handler: '~/api' }
   ],

@@ -56,3 +56,7 @@ Data will be stored on a redis server when using the environments variables `RED
 
 * re-order list of cues
 * password protect website for access with input or query string in uri
+
+<!-- ### Design
+
+![Figma design for Stage Clock](./stage-clock.jpg) -->

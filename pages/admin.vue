@@ -9,14 +9,14 @@ const cueTypeOptions = {
 }
 
 const {
-  create: createCue,
-  delete: deleteCue,
-  stop: stopCue,
-  pause: pauseCue,
-  start: startCue,
-  list: cueList,
+  createCue,
+  deleteCue,
+  stopCue,
+  pauseCue,
+  startCue,
+  cueList,
   sync
-} = useCue()
+} = useDatabase()
 const { readableTime } = useTransform()
 
 const secondsRemaining = ref(0)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  href: 'continue'|'negative'|'next'|'pause'|'play'|'prev'|'reset'|'stop'|'stop2'
+  href: Icon
 }>()
 </script>
 <template>

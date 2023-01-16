@@ -1,15 +1,14 @@
-// eslint-disable no-console
-export const useTimer = ({ cue }) => {
+export const useTimer = (database: Database) => {
   const { doubleDigit } = useTransform()
   const time = useTime()
 
   const _calculatedRemaining = ref(0)
 
   const {
-    current: currentCue,
-    startNext: startNextCue,
-    update: updateCue
-  } = cue
+    currentCue,
+    startNextCue,
+    updateCue
+  } = database
 
   const update = () => {
     if (!currentCue.value) {
@@ -57,7 +56,7 @@ export const useTimer = ({ cue }) => {
             startedAt: 0,
             durationRemaining: 0
           })
-          startNextCue({ timer })
+          startNextCue(timer)
           break
       }
     } else {
@@ -74,7 +73,7 @@ export const useTimer = ({ cue }) => {
     timer.seconds = doubleDigit(seconds)
   }
 
-  const timer = reactive({
+  const timer: Timer = reactive({
     hours: '00',
     minutes: '00',
     overTime: false,

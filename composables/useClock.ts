@@ -8,7 +8,7 @@ export const useClock = () => {
     clock.seconds = doubleDigit(date.getSeconds())
   }
 
-  const clock = reactive({
+  const clock: Clock = reactive({
     hours: '00',
     isHidden: false,
     minutes: '00',

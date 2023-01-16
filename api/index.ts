@@ -3,7 +3,12 @@ import express from 'express'
 import cors from 'cors'
 import Ioredis from 'ioredis'
 
-const logger = process.env.SERVER_LOG ? console.log : (...params) => params // eslint-disable-line no-console
+interface Client {
+  id: number,
+  response: any // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+const logger = process.env.SERVER_LOG ? console.log : (...params): any[] => params // eslint-disable-line no-console, @typescript-eslint/no-explicit-any
 const redisConfig = process.env.REDIS_TLS_URL || process.env.REDIS_URL
 const hasRedisConfig = !!redisConfig || !!process.env.REDIS_ACTIVE
 const redis = hasRedisConfig && new Ioredis(redisConfig)
@@ -11,7 +16,7 @@ const jsonPath = './database.json'
 const app = express()
 const welcomeMessage = { log: 'Welcome! Api is running and connected' }
 const log = [welcomeMessage]
-const defaultDatabase = {
+const defaultDatabase: { cueList: Cue[] } = {
   cueList: [
     {
       id: 'default-unique-cue-list-item-1',
@@ -86,7 +91,7 @@ if (!isDatabaseReady) {
   })
 }
 
-let clients = []
+let clients: Client[] = []
 
 app.use(cors())
 app.use(express.json()) // eslint-disable-line import/no-named-as-default-member

@@ -8,20 +8,8 @@ const cue = ref({
   startedAt: null,
   type: 'negative'
 })
-const cueTypeOptions = {
-  continue: {
-    label: 'Auto continue',
-    icon: 'continue'
-  },
-  negative: {
-    label: 'Go negative',
-    icon: 'negative'
-  },
-  stop: {
-    label: 'Stop',
-    icon: 'stop2'
-  }
-}
+const runtimeConfig = useRuntimeConfig()
+const { cueTypeOptions } = runtimeConfig.public
 const title = computed(() => isEditing.value ? `Update cue '${cue.value.description}'` : 'Create a new cue')
 
 </script>
@@ -57,11 +45,11 @@ const title = computed(() => isEditing.value ? `Update cue '${cue.value.descript
       <div class="flex mt-[10px] rounded overflow-hidden">
         <div class="grid grid-rows-1 grid-flow-col mx-[-1px]">
           <button
-            v-for="(option, key) in cueTypeOptions"
-            :key="key"
+            v-for="option in cueTypeOptions"
+            :key="option.key"
             :class="[
               'flex flex-col items-center py-[10px] px-[8px] bg-gray-500 border-1 border-gray-700 focus:bg-gray-700 mx-[1px]',
-              cue.type === key ? 'bg-blue-900 focus:bg-blue-700' : 'bg-gray-500 focus:bg-gray-700'
+              cue.type === option.key ? 'bg-blue-900 focus:bg-blue-700' : 'bg-gray-500 focus:bg-gray-700'
             ]"
           >
             <timer-icons :href="option.icon" />

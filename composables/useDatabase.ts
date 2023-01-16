@@ -1,15 +1,6 @@
 import { nanoid } from 'nanoid'
 
-export const useCue = () => {
-  type cue = {
-    description?: string,
-    duration: number,
-    durationRemaining: number,
-    id: string,
-    startedAt?: number,
-    type: 'continue'|'negative'|'stop',
-  }
-
+export const useDatabase = (): Database => {
   const listening = ref(false)
   const logger = console.log // eslint-disable-line no-console
 
@@ -41,12 +32,12 @@ export const useCue = () => {
 
   const time = useTime()
 
-  const _defaults = <cue>{
+  const _defaults: Cue = {
     description: 'cue item',
     type: 'negative'
   }
 
-  const create = (cue: cue): void => {
+  const createCue: Database['createCue'] = (cue) => {
     list.value.push({
       id: nanoid(48),
       ..._defaults,
@@ -55,13 +46,13 @@ export const useCue = () => {
     sync()
   }
 
-  const deleteCue = (id: cue['id']) => {
+  const deleteCue: Database['deleteCue'] = (id) => {
     if (confirm('Are you sure you want to delete a cue?')) {
       list.value = list.value.filter(cue => cue.id !== id)
     }
   }
 
-  const list = ref(<cue[]>[])
+  const list = ref<Cue[]>([])
   const sync = () => {
     $fetch('/api/sync', {
       method: 'POST',
@@ -72,27 +63,26 @@ export const useCue = () => {
     })
   }
 
-  const lastActiveId = ref(<cue['id']>null)
-  const _active = computed(() => list.value.find(({ startedAt }) => startedAt))
-  const _lastActive = computed(() => list.value.find(({ id }) => id === lastActiveId.value))
-  const current = computed(() => _active.value || _lastActive.value)
+  const lastActiveId: Database['lastActiveId'] = ref(null)
+  const _active = computed(() => list.value.find(c => c.startedAt))
+  const _lastActive = computed(() => list.value.find(c => c.id === lastActiveId.value))
+  const currentCue = computed(() => _active.value || _lastActive.value)
+  const hasLongCues = computed(() => !!list.value.find(c => c.duration >= 3600))
 
-  const update = (newCueValues): void => {
-    const cueKey = newCueValues.id && list.value.findIndex(({ id }: cue): boolean => {
-      return id === newCueValues.id
-    })
+  const updateCue: Database['updateCue'] = (newValues) => {
+    const cueKey = newValues.id && list.value.findIndex(c => c.id === newValues.id)
     if (typeof cueKey === 'undefined' || cueKey < 0) {
       return
     }
-    list.value[cueKey] = <cue>{
+    list.value[cueKey] = {
       ...list.value[cueKey],
-      ...newCueValues
+      ...newValues
     }
 
     sync()
   }
 
-  const start = (id, remaining) => {
+  const startCue: Database['startCue'] = (id, remaining) => {
     const startedAt = time.now()
 
     // Pause all cues (fallback mechanism)
@@ -103,28 +93,28 @@ export const useCue = () => {
       }
     })
 
-    update({
+    updateCue({
       id,
       startedAt
     })
   }
 
-  const pause = (id, remaining) => update({
+  const pauseCue: Database['pauseCue'] = (id, remaining) => updateCue({
     id,
     startedAt: 0,
     durationRemaining: remaining
   })
 
-  const stop = id => update({
+  const stopCue: Database['stopCue'] = id => updateCue({
     id,
     startedAt: 0,
     durationRemaining: null
   })
 
-  const startNext = ({ timer }): void => {
+  const startNextCue: Database['startNextCue'] = (timer) => {
     timer.remaining = 0
     timer.overTime = false
-    const currentKey = list.value.findIndex(({ id }: cue) => id === current.value.id)
+    const currentKey = list.value.findIndex(c => c.id === currentCue.value.id)
     if (currentKey < 0) {
       console.error('current cue not found when trying to start next cue') // eslint-disable-line no-console
       return
@@ -144,17 +134,17 @@ export const useCue = () => {
   }
 
   return {
-    create,
-    delete: deleteCue,
-    list,
-    current,
+    createCue,
+    deleteCue,
+    cueList: list,
+    currentCue,
     lastActiveId,
-    hasLongCues: computed(() => !!list.value.find(({ duration }: cue) => duration >= 3600)),
-    pause,
-    start,
-    startNext,
-    stop,
+    hasLongCues,
+    pauseCue,
+    startCue,
+    startNextCue,
+    stopCue,
     sync,
-    update
+    updateCue
   }
 }
