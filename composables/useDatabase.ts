@@ -138,8 +138,32 @@ export const useDatabase = (): Database => {
     if (nextCue) {
       list.value[nextKey].startedAt = time.now()
       list.value[currentKey].startedAt = null
-    } else {
+    } else if (list.value[currentKey].type === 'continue') {
       list.value[currentKey].type = 'stop'
+    }
+
+    sync()
+  }
+
+  const startPreviousCue: Database['startPreviousCue'] = (timer) => {
+    if (!timer) {
+      logger('cannot start previous cue without timer info')
+      return
+    }
+    timer.remaining = 0
+    timer.overTime = false
+    const currentKey = list.value.findIndex(c => c.id === currentCue.value.id)
+    if (currentKey < 0) {
+      console.error('current cue not found when trying to start next cue') // eslint-disable-line no-console
+      return
+    }
+    const nextKey = currentKey - 1
+
+    const nextCue = list.value[nextKey]
+
+    if (nextCue) {
+      list.value[nextKey].startedAt = time.now()
+      list.value[currentKey].startedAt = null
     }
 
     sync()
@@ -155,6 +179,7 @@ export const useDatabase = (): Database => {
     pauseCue,
     startCue,
     startNextCue,
+    startPreviousCue,
     stopCue,
     sync,
     updateCue

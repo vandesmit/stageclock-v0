@@ -39,6 +39,7 @@ interface Database {
   pauseCue: (id: Cue['id'], remaining: Cue['durationRemaining']) => void,
   startCue: (id: Cue['id'], remaining: Cue['durationRemaining']) => void,
   startNextCue: (timer: Timer) => void,
+  startPreviousCue: (timer: Timer) => void,
   stopCue: (id: Cue['id']) => void,
   sync: () => void,
   updateCue: (newValues: Cue) => void,

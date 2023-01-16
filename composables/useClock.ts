@@ -10,7 +10,6 @@ export const useClock = () => {
 
   const clock: Clock = reactive({
     hours: '00',
-    isHidden: false,
     minutes: '00',
     seconds: '00',
     update
