@@ -8,6 +8,8 @@ const cueTypeOptions = {
   stop: 'Stop'
 }
 
+const database = useDatabase()
+
 const {
   createCue,
   deleteCue,
@@ -15,9 +17,13 @@ const {
   pauseCue,
   startCue,
   cueList,
+  currentCue,
+  startNextCue,
+  startPreviousCue,
   sync
-} = useDatabase()
+} = database
 const { readableTime } = useTransform()
+const timer = useTimer(database)
 
 const secondsRemaining = ref(0)
 const currentCueId = ref(null)
@@ -64,6 +70,145 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
         @current-cue-id="setCurrentCueId"
         @is-over-time="setIsOverTime"
       />
+      <div
+        v-if="currentCue"
+        class="flex items-end w-full bg-gray-800 text-white py-[20px] px-[24px] rounded-md m-[20px]"
+      >
+        <button
+          class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+          :aria-label="`Next.`"
+          title="next"
+          @click="startPreviousCue(timer)"
+        >
+          Previous
+        </button>
+        <template v-if="!currentCue.startedAt">
+          <button
+            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+            :aria-label="`Stop ${currentCue.description}.`"
+            title="stop"
+            @click="stopCue(currentCue.id)"
+          >
+            <svg
+              width="164"
+              height="164"
+              viewBox="0 0 164 164"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M60.6047 70.0799C52.7454 76.0834 52.7454 87.9166 60.6047 93.9201L118.394 138.064C128.266 145.605 142.5 138.566 142.5 126.144L142.5 37.8556C142.5 25.4339 128.266 18.3951 118.394 25.9355L60.6047 70.0799Z"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+              <rect
+                x="24"
+                y="22"
+                width="30"
+                height="120"
+                rx="15"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+            </svg>
+            Reset
+          </button>
+          <button
+            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+            :aria-label="`Resume ${currentCue.description}.`"
+            title="resume"
+            @click="startCue(currentCue.id, secondsRemaining)"
+          >
+            <svg
+              width="164"
+              height="164"
+              viewBox="0 0 164 164"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M147.395 70.0799C155.255 76.0834 155.255 87.9166 147.395 93.9201L89.6055 138.064C79.7343 145.605 65.5 138.566 65.5 126.144L65.5 37.8556C65.5 25.4339 79.7343 18.3951 89.6055 25.9355L147.395 70.0799Z"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+              <rect
+                x="13"
+                y="22"
+                width="30"
+                height="120"
+                rx="15"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+            </svg>
+            Play
+          </button>
+        </template>
+        <template v-else>
+          <button
+            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+            :aria-label="`Stop ${currentCue.description}.`"
+            title="stop"
+            @click="stopCue(currentCue.id)"
+          >
+            <svg
+              width="164"
+              height="164"
+              viewBox="0 0 164 164"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="27"
+                y="27"
+                width="110"
+                height="110"
+                rx="15"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+            </svg>
+            Stop
+          </button>
+          <button
+            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+            :aria-label="`Pause ${currentCue.description}.`"
+            title="pause"
+            @click="pauseCue(currentCue.id, secondsRemaining)"
+          >
+            <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect
+                x="96"
+                y="17"
+                width="45"
+                height="130"
+                rx="15"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+              <rect
+                x="24"
+                y="17"
+                width="43.3333"
+                height="130"
+                rx="15"
+                stroke="currentColor"
+                stroke-width="8"
+              />
+            </svg>
+            Pause
+          </button>
+        </template>
+        <button
+          class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+          :aria-label="`Next.`"
+          title="next"
+          @click="startNextCue(timer)"
+        >
+          Next
+        </button>
+        <!-- <div>Reset</div> -->
+      </div>
       <template v-if="isEditable">
         <div class="cue-list divide-y divide-slate-700 mt-8 w-full max-w-sm">
           <div v-for="({ id, duration }, key) in cueList" :key="`edit-${id}`" class="py-3 w-full">
@@ -164,14 +309,46 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
           </div>
         </div>
       </template>
-      <template v-else>
+      <template v-else-if="cueList.length">
         <div
-          v-if="cueList.length"
+          v-for="c in cueList"
+          :key="c.id"
+          class="flex py-3 px-1 cue"
+          :class="{
+            'overflow-hidden flex justify-between w-full bg-gray-800 text-white py-[20px] px-[24px] rounded-md m-[20px]': true,
+            current: c.id === currentCueId,
+            active: c.id === currentCueId && c.startedAt,
+            'over-time': isOverTime,
+          }"
+          :style="{
+            '--background-width': `${getCuePercentage(c)}%`,
+          }"
+          @click="startCue(c.id, secondsRemaining)"
+        >
+          <div>
+            <div>
+              {{ c.description }}
+            </div>
+            <div>
+              {{ cueTypeOptions[c.type] && cueTypeOptions[c.type] }}
+            </div>
+          </div>
+          <div class="text-right">
+            <div>
+              {{ readableTime(c.duration) }}
+            </div>
+            <div>
+              {{ readableTime(Math.ceil(c.duration - (currentCueId === c.id ? secondsRemaining : c.durationRemaining))) }}
+            </div>
+          </div>
+        </div>
+        <div
           class="cue-list divide-y divide-slate-700 mt-8 text-white"
           :class="{
             'over-time': isOverTime,
           }"
         >
+          <b>old cue system</b>
           <div class="flex py-3 px-1">
             <div class="w-[90px] pl-[10px] text-right">
               Actions
@@ -528,6 +705,7 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
   // }
 }
 
+.cue.over-time.active:before,
 .cue-list.over-time .cue.active:before {
   animation: blinkingBackground 1s infinite;
 }
