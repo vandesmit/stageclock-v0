@@ -30,7 +30,7 @@ setInterval(() => {
 }, 100)
 </script>
 <template>
-  <div class="flex flex-col justify-between bg-gray-800 text-white py-[20px] px-[24px] rounded-md">
+  <div class="flex w-full h-full flex-col justify-between bg-gray-800 text-white py-[20px] px-[24px] rounded-md">
     <div
       v-if="timer"
       class="font-mono text-xxl text-center"

@@ -27,7 +27,7 @@ const toggleFullscreen = () => fullscreen.value ? exitFullscreen() : enterFullsc
 <template>
   <div
     ref="fullscreenContainer"
-    class="h-screen w-screen bg-gray-900 text-white p-2"
+    class="h-full w-full bg-gray-900 text-white p-2"
     @click="toggleFullscreen"
   >
     <timer-clock />

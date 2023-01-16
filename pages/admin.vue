@@ -56,7 +56,7 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
 }
 </script>
 <template>
-  <div class="min-h-screen w-screen bg-gray-900">
+  <div class="min-h-full w-full bg-gray-900 p-2">
     <div class="pb-12 flex flex-col items-center">
       <timer-clock
         v-show="isClockVisible"
