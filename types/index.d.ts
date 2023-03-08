@@ -1,4 +1,4 @@
-type Icon = 'continue'|'negative'|'next'|'pause'|'play'|'prev'|'reset'|'stop'|'stop2'
+type Icon = 'continue'|'negative'|'next'|'pause'|'play'|'prev'|'reset'|'stop'|'stop2'|'angles-right'|'hexagon-minus'|'circle-stop'
 type CueType = 'continue'|'negative'|'stop'
 
 interface Label {

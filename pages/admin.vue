@@ -62,7 +62,7 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
 }
 </script>
 <template>
-  <div class="min-h-full w-full bg-gray-900 p-2">
+  <div class="min-h-full w-full">
     <div class="pb-12 flex flex-col items-center">
       <timer-clock
         v-show="isClockVisible"
@@ -72,142 +72,64 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
       />
       <div
         v-if="currentCue"
-        class="flex items-end w-full bg-gray-800 text-white py-[20px] px-[24px] rounded-md m-[20px]"
+        class="grid grid-cols-5 w-full bg-gray-800 text-white rounded-md m-2.5 mt-5 overflow-hidden"
       >
         <button
-          class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+          class="btn btn--actionbar"
           :aria-label="`Next.`"
           title="next"
           @click="startPreviousCue(timer)"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M459.5 71.41l-171.5 142.9v83.45l171.5 142.9C480.1 457.7 512 443.3 512 415.1V96.03C512 68.66 480.1 54.28 459.5 71.41zM203.5 71.41L11.44 231.4c-15.25 12.87-15.25 36.37 0 49.24l192 159.1c20.63 17.12 52.51 2.749 52.51-24.62v-319.9C255.1 68.66 224.1 54.28 203.5 71.41z" /></svg>
           Previous
         </button>
-        <template v-if="!currentCue.startedAt">
-          <button
-            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
-            :aria-label="`Stop ${currentCue.description}.`"
-            title="stop"
-            @click="stopCue(currentCue.id)"
-          >
-            <svg
-              width="164"
-              height="164"
-              viewBox="0 0 164 164"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M60.6047 70.0799C52.7454 76.0834 52.7454 87.9166 60.6047 93.9201L118.394 138.064C128.266 145.605 142.5 138.566 142.5 126.144L142.5 37.8556C142.5 25.4339 128.266 18.3951 118.394 25.9355L60.6047 70.0799Z"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-              <rect
-                x="24"
-                y="22"
-                width="30"
-                height="120"
-                rx="15"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-            </svg>
-            Reset
-          </button>
-          <button
-            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
-            :aria-label="`Resume ${currentCue.description}.`"
-            title="resume"
-            @click="startCue(currentCue.id, secondsRemaining)"
-          >
-            <svg
-              width="164"
-              height="164"
-              viewBox="0 0 164 164"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M147.395 70.0799C155.255 76.0834 155.255 87.9166 147.395 93.9201L89.6055 138.064C79.7343 145.605 65.5 138.566 65.5 126.144L65.5 37.8556C65.5 25.4339 79.7343 18.3951 89.6055 25.9355L147.395 70.0799Z"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-              <rect
-                x="13"
-                y="22"
-                width="30"
-                height="120"
-                rx="15"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-            </svg>
-            Play
-          </button>
-        </template>
-        <template v-else>
-          <button
-            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
-            :aria-label="`Stop ${currentCue.description}.`"
-            title="stop"
-            @click="stopCue(currentCue.id)"
-          >
-            <svg
-              width="164"
-              height="164"
-              viewBox="0 0 164 164"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="27"
-                y="27"
-                width="110"
-                height="110"
-                rx="15"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-            </svg>
-            Stop
-          </button>
-          <button
-            class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
-            :aria-label="`Pause ${currentCue.description}.`"
-            title="pause"
-            @click="pauseCue(currentCue.id, secondsRemaining)"
-          >
-            <svg width="164" height="164" viewBox="0 0 164 164" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect
-                x="96"
-                y="17"
-                width="45"
-                height="130"
-                rx="15"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-              <rect
-                x="24"
-                y="17"
-                width="43.3333"
-                height="130"
-                rx="15"
-                stroke="currentColor"
-                stroke-width="8"
-              />
-            </svg>
-            Pause
-          </button>
-        </template>
         <button
-          class="flex grow flex-col items-center btn btn-icon btn-icon--fat"
+          v-if="!currentCue.startedAt"
+          class="btn btn--actionbar"
+          :aria-label="`Resume ${currentCue.description}.`"
+          title="resume"
+          @click="startCue(currentCue.id, secondsRemaining)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M361 215C375.3 223.8 384 239.3 384 256C384 272.7 375.3 288.2 361 296.1L73.03 472.1C58.21 482 39.66 482.4 24.52 473.9C9.377 465.4 0 449.4 0 432V80C0 62.64 9.377 46.63 24.52 38.13C39.66 29.64 58.21 29.99 73.03 39.04L361 215z" /></svg>
+          Play
+        </button>
+        <button
+          v-else
+          class="btn btn--actionbar"
+          :aria-label="`Pause ${currentCue.description}.`"
+          title="pause"
+          @click="pauseCue(currentCue.id, secondsRemaining)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M52.51 71.41C31.88 54.28 0 68.66 0 96.03v319.9c0 27.37 31.88 41.74 52.51 24.62l192-159.1c15.25-12.87 15.25-36.37 0-49.24L52.51 71.41zM352 64c-17.67 0-32.03 14.33-32.03 32v320c0 17.67 14.33 32 32 32C369.6 448 384 433.7 384 416V96C384 78.33 369.7 64 352 64zM480 64c-17.67 0-32.03 14.33-32.03 32v320c0 17.67 14.33 32 32 32C497.6 448 512 433.7 512 416V96C512 78.33 497.7 64 480 64z" /></svg>
+          Pause
+        </button>
+        <button
+          class="btn btn--actionbar"
+          :aria-label="`Stop ${currentCue.description}.`"
+          title="stop"
+          @click="stopCue(currentCue.id)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M384 128v255.1c0 35.35-28.65 64-64 64H64c-35.35 0-64-28.65-64-64V128c0-35.35 28.65-64 64-64H320C355.3 64 384 92.65 384 128z" /></svg>
+          Stop
+        </button>
+        <button
+          class="btn btn--actionbar"
           :aria-label="`Next.`"
           title="next"
           @click="startNextCue(timer)"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M52.51 440.6l171.5-142.9V214.3L52.51 71.41C31.88 54.28 0 68.66 0 96.03v319.9C0 443.3 31.88 457.7 52.51 440.6zM308.5 440.6l192-159.1c15.25-12.87 15.25-36.37 0-49.24l-192-159.1c-20.63-17.12-52.51-2.749-52.51 24.62v319.9C256 443.3 287.9 457.7 308.5 440.6z" /></svg>
           Next
         </button>
-        <!-- <div>Reset</div> -->
+        <button
+          class="btn btn--actionbar"
+          :aria-label="`Stop ${currentCue.description}.`"
+          title="stop"
+          @click="stopCue(currentCue.id)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M468.9 32.11c13.87 0 27.18 10.77 27.18 27.04v145.9c0 10.59-8.584 19.17-19.17 19.17h-145.7c-16.28 0-27.06-13.32-27.06-27.2c0-6.634 2.461-13.4 7.96-18.9l45.12-45.14c-28.22-23.14-63.85-36.64-101.3-36.64c-88.09 0-159.8 71.69-159.8 159.8S167.8 415.9 255.9 415.9c73.14 0 89.44-38.31 115.1-38.31c18.48 0 31.97 15.04 31.97 31.96c0 35.04-81.59 70.41-147 70.41c-123.4 0-223.9-100.5-223.9-223.9S132.6 32.44 256 32.44c54.6 0 106.2 20.39 146.4 55.26l47.6-47.63C455.5 34.57 462.3 32.11 468.9 32.11z" /></svg>
+          Reset
+        </button>
       </div>
       <template v-if="isEditable">
         <div class="cue-list divide-y divide-slate-700 mt-8 w-full max-w-sm">
@@ -313,9 +235,8 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
         <div
           v-for="c in cueList"
           :key="c.id"
-          class="flex py-3 px-1 cue"
+          class="flex cue overflow-hidden justify-between w-full bg-gray-800 text-white py-[20px] px-[24px] rounded-md m-2.5"
           :class="{
-            'overflow-hidden flex justify-between w-full bg-gray-800 text-white py-[20px] px-[24px] rounded-md m-[20px]': true,
             current: c.id === currentCueId,
             active: c.id === currentCueId && c.startedAt,
             'over-time': isOverTime,
@@ -329,9 +250,7 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
             <div>
               {{ c.description }}
             </div>
-            <div>
-              {{ cueTypeOptions[c.type] && cueTypeOptions[c.type] }}
-            </div>
+            <cue-label :type="c.type" />
           </div>
           <div class="text-right">
             <div>
@@ -612,16 +531,20 @@ const changeSeconds = (x, newValue = '0', oldValue = 0) => {
 </template>
 <style scoped lang="scss">
 .btn {
-  @apply font-bold py-2 px-4 bg-blue-500 text-white;
-
-  &:hover {
-    @apply bg-blue-700;
-  }
+  @apply font-bold p-2.5 text-[11px] bg-gray-800 hover:bg-gray-700 active:bg-blue-900 text-white;
 
   svg {
     display: inline;
     height: 1em;
     width: 1em;
+    fill: currentColor;
+  }
+
+  &--actionbar {
+    @apply flex grow flex-col items-center justify-end;
+  }
+  &--actionbar + &--actionbar {
+    @apply border-l border-gray-700;
   }
 
   &-icon--lg {

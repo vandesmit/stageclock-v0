@@ -30,10 +30,10 @@ setInterval(() => {
 }, 100)
 </script>
 <template>
-  <div class="flex w-full h-full flex-col justify-between bg-gray-800 text-white py-[20px] px-[24px] rounded-md">
+  <div class="flex w-full h-full flex-col justify-between bg-gray-800 text-white py-5 px-6 rounded-md">
     <div
       v-if="timer"
-      class="font-mono text-xxl text-center"
+      class="font-mono text-3xl text-center"
       :class="{
         'text-red-500': timer.overTime,
         'text-gray-400': !currentCue,
@@ -47,12 +47,12 @@ setInterval(() => {
       <span>:</span>
       {{ timer.seconds }}
     </div>
-    <div class="text-xl text-center mt-[20px]">
+    <div class="text-xl text-center mt-5">
       {{ currentCue && currentCue.description || '-' }}
     </div>
     <div
       v-if="!clock.isHidden"
-      class="font-mono text-lg text-right text-gray-400 mt-[20px]"
+      class="font-mono text-lg text-right text-gray-400 mt-5"
     >
       {{ clock.hours }}
       <span>:</span>

@@ -107,3 +107,6 @@ dist
 # Project specific ignores
 database.json
 dump.rdb
+
+# Editor config files
+.vscode
